@@ -247,6 +247,9 @@ zplug load
 
 [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
 
+# sops: age 秘密鍵の場所(復号用)
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+
 # マシンローカル設定(git 管理外)
 if [ -f $HOME/.zshrc.local ]; then
   source $HOME/.zshrc.local
