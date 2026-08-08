@@ -1,10 +1,24 @@
 #!/bin/bash
-# shared/home → <machine>/home の順に $HOME へ symlink する(後勝ち)
+# shared/home → <machine>/home の順に $HOME へ symlink する(後勝ち)。
+# dotfiles 管理外の実ファイル/ディレクトリは、上書き前に backup へ退避してから link する
+# （新マシンや他人が実行しても既存ファイルを破壊しないための安全策）。
 set -eu
 
 MACHINE="${1:?usage: link.sh <machine>}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# 退避先はこの実行ごとに1つ（同一 timestamp）。実際に退避が発生した時だけ作成される。
+BACKUP_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/backups/$(date +%Y%m%d-%H%M%S)-$$"
+
+# dotfiles 管理外の実体を backup へ移す（管理下 symlink は対象外）。
+backup_unmanaged() {
+  local target="$1" rel
+  rel="${target#"$HOME"/}"
+  mkdir -p "$BACKUP_DIR/$(dirname "$rel")"
+  mv "$target" "$BACKUP_DIR/$rel"
+  echo "backed up unmanaged: $target -> $BACKUP_DIR/$rel" >&2
+}
 
 link_path() {
   local source="$1"
@@ -24,6 +38,9 @@ link_path() {
           ;;
       esac
       unlink "$target"
+    elif [ -e "$target" ] && [ ! -d "$target" ]; then
+      # source はディレクトリだが target が実ファイル → 退避してから mkdir
+      backup_unmanaged "$target"
     fi
     mkdir -p "$target"
     for child in "$source"/* "$source"/.[!.]* "$source"/..?*; do
@@ -32,7 +49,15 @@ link_path() {
     done
   else
     if [ -L "$target" ]; then
-      unlink "$target"
+      # 管理下(ROOT_DIR 配下)の symlink は張り替え、管理外 symlink は退避(dir 側と同じ扱い)
+      target_link="$(readlink "$target")"
+      case "$target_link" in
+        "$ROOT_DIR"/*) unlink "$target" ;;
+        *) backup_unmanaged "$target" ;;
+      esac
+    elif [ -e "$target" ]; then
+      # dotfiles 管理外の実ファイル → 上書き前に退避
+      backup_unmanaged "$target"
     fi
     ln -fnsv "$source" "$target"
   fi

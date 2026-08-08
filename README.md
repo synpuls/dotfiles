@@ -49,9 +49,10 @@ dotfiles/
 
 ```sh
 # Linux のみ
-sudo apt update && sudo apt upgrade && sudo apt install -y git curl zsh
+sudo apt update && sudo apt install -y git curl zsh
 
-ghq get git@github.com:synpuls/dotfiles.git
+# 初回は HTTPS で clone(SSH 鍵はこの後で用意するため)。SSH 化は鍵設定後に remote を張り替える。
+ghq get https://github.com/synpuls/dotfiles
 cd ~/workspace/github.com/synpuls/dotfiles && ./init.sh
 ```
 

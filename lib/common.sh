@@ -7,8 +7,18 @@ detect_machine() {
     echo "mac"
     return
   fi
-  # 非 Darwin は既定で server。デスクトップ機は初回のみ `./init.sh ubuntu-desktop` で明示保存する
-  echo "server"
+  # Linux は「Ubuntu 24.04 / x86_64 / 非WSL」の時だけ server を自動判定する。
+  # server プロファイルの前提(server/init.sh の preflight)と一致させ、変更適用より前の誤爆を防ぐ。
+  # 22.04 / ARM / WSL / desktop 等は自動判定せず、明示指定(./init.sh <machine>)を促す。
+  if [ -r /etc/os-release ] &&
+    (. /etc/os-release && [ "${ID:-}" = "ubuntu" ] && [ "${VERSION_ID:-}" = "24.04" ]) &&
+    [ "$(uname -m)" = "x86_64" ] &&
+    ! grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+    echo "server"
+    return
+  fi
+  echo "マシンを自動判定できません。./init.sh <machine> で明示してください(例: server)。" >&2
+  return 1
 }
 
 resolve_machine() {

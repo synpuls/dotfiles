@@ -25,6 +25,23 @@ if [ -n "$staged_ssh" ]; then
   status=1
 fi
 
+# gitleaks があれば staged 変更を secret scan(token/AWS 鍵等、上の簡易チェックが拾えない物も検出)。
+# 無い環境では上記の簡易チェックのみで続行する(gitleaks は mise の server プロファイルで導入)。
+if command -v gitleaks >/dev/null 2>&1; then
+  gl_out="$(gitleaks protect --staged --redact --no-banner 2>&1)"
+  gl_rc=$?
+  if [ "$gl_rc" -eq 1 ]; then
+    # rc=1 = 秘密検出(値は --redact で伏せる)。commit をブロック。
+    echo "ERROR: gitleaks が staged 変更に秘密を検出しました:" >&2
+    echo "$gl_out" >&2
+    status=1
+  elif [ "$gl_rc" -ne 0 ]; then
+    # rc=その他 = gitleaks 自体のエラー(config/破損等)。検出とは区別し、警告のみ(fail-open)。
+    echo "WARN: gitleaks の実行に失敗しました(rc=$gl_rc)。手動確認を推奨:" >&2
+    echo "$gl_out" >&2
+  fi
+fi
+
 if [ "$status" -ne 0 ]; then
   echo "コミットを中止しました。意図したものなら --no-verify で回避できます。" >&2
 fi
