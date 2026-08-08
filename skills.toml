@@ -4,6 +4,8 @@
 #   source = "owner/repo"   npx skills add の引数
 #   skill  = "<name>"       複数 skill repo から 1 つ選ぶ(任意, npx の -s)
 #   path   = "dir"          dotfiles 内の実体（自作 skill 用, source と排他）
+#                           commit する自作 skill の実体は shared/skills/<name>/ に置く
+#                           (cross-platform ゆえ shared 配下。shared/bin と対）
 #
 # 配布先セクション（どのエージェントで使うか）:
 #   [all]    両方（Codex ~/.agents 実体 + Claude ~/.claude symlink）
@@ -14,6 +16,15 @@
 
 [skills.herdr]
 source = "ogulcancelik/herdr"
+
+# 自作: herdr の worktree/agent を束ねた並列ディスパッチ運用。
+#   /wt <やりたいこと>  … worktree+workspace を作りエージェントに task を渡す
+#   /wtclean [--yes]    … merged 済みの worktree を安全に回収
+[skills.wt]
+path = "shared/skills/wt"
+
+[skills.wtclean]
+path = "shared/skills/wtclean"
 
 [skills.codex-consultation]
 source = "shokai/agent-skills"
@@ -40,6 +51,8 @@ skill = "unconventional-simplification"
 [all]
 skills = [
   "herdr",
+  "wt",
+  "wtclean",
   "conversation-context-export",
   "conversation-context-import",
   "unconventional-simplification",
