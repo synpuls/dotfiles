@@ -1,0 +1,31 @@
+#!/bin/bash
+# 秘密の混入をブロックする。init.sh が core.hooksPath で有効化する
+set -u
+
+status=0
+
+staged_local="$(git diff --cached --name-only | grep -E '(^|/)[^/]*\.local(\.[^/]*)?$' || true)"
+if [ -n "$staged_local" ]; then
+  echo "ERROR: git 管理外であるべき *.local が staged されています:" >&2
+  echo "$staged_local" >&2
+  status=1
+fi
+
+# 文字クラスで書かないと、このフック自身をコミットするときに自己マッチする
+if git diff --cached | grep '^+' | grep -Eq -- "-----BEGIN [A-Z ]*PRIVATE KEY-----"; then
+  echo "ERROR: 秘密鍵らしき内容が staged されています。" >&2
+  status=1
+fi
+
+# ~/.ssh 配下は config 以外を追跡させない(鍵の誤コミット防止)
+staged_ssh="$(git diff --cached --name-only | grep -E '(^|/)home/\.ssh/' | grep -vE '/home/\.ssh/config$' || true)"
+if [ -n "$staged_ssh" ]; then
+  echo "ERROR: ~/.ssh 配下(config 以外)が staged されています:" >&2
+  echo "$staged_ssh" >&2
+  status=1
+fi
+
+if [ "$status" -ne 0 ]; then
+  echo "コミットを中止しました。意図したものなら --no-verify で回避できます。" >&2
+fi
+exit "$status"

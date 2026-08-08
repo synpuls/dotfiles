@@ -1,0 +1,9 @@
+# Values are aggregate resident memory (RSS) in GiB.
+# The initial policy only notifies and captures diagnostics; it never kills.
+CHROME_WARN_GIB=20
+WEZTERM_WARN_GIB=10
+SYSTEM_FREE_WARN_PERCENT=15
+
+# Suppress repeated notifications for the same category.
+NOTIFY_COOLDOWN_SECONDS=1800
+

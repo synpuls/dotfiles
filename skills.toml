@@ -1,0 +1,56 @@
+# エージェントに配布する skill の宣言。反映は lib/link-skills.py（setup.sh から）。
+#
+# [skills.<name>] 取得元:
+#   source = "owner/repo"   npx skills add の引数
+#   skill  = "<name>"       複数 skill repo から 1 つ選ぶ(任意, npx の -s)
+#   path   = "dir"          dotfiles 内の実体（自作 skill 用, source と排他）
+#
+# 配布先セクション（どのエージェントで使うか）:
+#   [all]    両方（Codex ~/.agents 実体 + Claude ~/.claude symlink）
+#   [codex]  codex だけ（~/.agents のみ）
+#   [claude] claude だけ（~/.claude のみ。~/.agents に置くと codex に漏れるため）
+#
+# machine-local / 未 commit の自作 skill は skills.local.toml(gitignore) に書く。
+
+[skills.herdr]
+source = "ogulcancelik/herdr"
+
+[skills.codex-consultation]
+source = "shokai/agent-skills"
+skill = "codex-consultation"
+
+[skills.subagent-consultation]
+source = "shokai/agent-skills"
+skill = "subagent-consultation"
+
+[skills.conversation-context-export]
+source = "shokai/agent-skills"
+skill = "conversation-context-export"
+
+[skills.conversation-context-import]
+source = "shokai/agent-skills"
+skill = "conversation-context-import"
+
+[skills.unconventional-simplification]
+source = "shokai/agent-skills"
+skill = "unconventional-simplification"
+
+# 両エージェントで使う: multiplexer 操作(herdr)、セッション間ハンドオフ
+# (conversation-context)、汎用のコード簡素化(unconventional-simplification)。
+[all]
+skills = [
+  "herdr",
+  "conversation-context-export",
+  "conversation-context-import",
+  "unconventional-simplification",
+]
+
+# subagent-consultation は「Codex が別の Codex(subagent) に相談する」物なので
+# codex 内でのみ意味を持つ。codex-consultation の codex->codex 版。
+[codex]
+skills = ["subagent-consultation"]
+
+# codex-consultation は「Claude が外部の Codex に相談する」物で、Codex 内では
+# 無意味(codex->codex になる。それは subagent-consultation)なので claude だけ。
+[claude]
+skills = ["codex-consultation"]

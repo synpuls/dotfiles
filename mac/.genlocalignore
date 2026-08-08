@@ -1,0 +1,3 @@
+# genlocal.sh の除外リスト(この層からの相対パス。ディレクトリは配下ごと)
+
+home/.config/karabiner    # GUI が生成する JSON。.local を読む仕組みがない

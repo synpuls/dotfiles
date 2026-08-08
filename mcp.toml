@@ -1,0 +1,26 @@
+# 各エージェントに登録する MCP サーバの宣言。反映は lib/link-mcp.py（setup.sh から）。
+#
+# [servers.<name>] サーバ定義:
+#   command = "..."          起動コマンド
+#   args    = [...]          引数（任意）
+#   env     = { KEY = "v" }  環境変数（任意。秘密は mcp.local.toml へ）
+#
+# 配布先セクション（skills.toml と同じ [all]/[codex]/[claude]）:
+#   [all]    両方に登録   [codex] codex だけ   [claude] claude だけ
+#
+# Codex 内蔵の node_repl / computer-use など、各エージェントが自動設定するサーバは
+# ここに書かない（state 所有権で reconciler は触らない）。
+# 秘密(API キー等)を持つサーバは mcp.local.toml(gitignore) に書く。
+
+[servers.chrome-devtools]
+command = "npx"
+args = ["chrome-devtools-mcp@latest"]
+
+[all]
+servers = []
+
+[codex]
+servers = ["chrome-devtools"]
+
+[claude]
+servers = []

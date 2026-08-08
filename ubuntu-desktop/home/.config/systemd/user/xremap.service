@@ -1,0 +1,10 @@
+[Unit]
+Description=xremap
+
+[Service]
+Restart=always
+ExecStart=%h/.cargo/bin/xremap %h/.config/xremap/config.yml
+Environment="DISPLAY=:0"
+
+[Install]
+WantedBy=default.target

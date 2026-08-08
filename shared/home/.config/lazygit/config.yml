@@ -1,0 +1,20 @@
+gui:
+  # windowSize: "half"
+  showFileTree: true
+  sidePanelWidth: 0.16
+  mainPanelSplitMode: "vertical"
+  theme:
+    selectedLineBgColor:
+      - reverse
+  # splitDiff: always
+  authorColors:
+    'synpuls': 'red'
+    '*': 'blue'
+  mouseEvents: false
+  commitLength:
+    show: false
+git:
+  pagers:
+    - colorArg: always
+      pager: delta --paging=never
+quitOnTopLevelReturn: true

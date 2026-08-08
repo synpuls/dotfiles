@@ -1,0 +1,18 @@
+# server の共通ツール。version をここに厳密固定し、mise.lock が backend/hash も pin する。
+# 更新: version を書き換え → `mise install`（mise.lock も更新される）→ commit。
+# node は devcontainer CLI / npx / mcp の control-plane 用。プロジェクトの言語 toolchain は
+# 各 repo の devcontainer が持つ（host には積まない）。
+
+[tools]
+node = "24.19.0"
+neovim = "0.12.4"
+lazygit = "0.64.0"
+lazydocker = "0.25.2"
+delta = "0.19.2"
+ghq = "1.10.1"
+starship = "1.26.0"
+herdr = "0.8.0"
+
+[settings]
+# version+hash を mise.lock に固定して再現可能にする。
+lockfile = true

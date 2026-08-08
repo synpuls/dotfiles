@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# dcx — devcontainer 実行境界。host から project の devcontainer を up / exec / shell する薄いラッパ。
+#
+# 使い方:
+#   dcx up                        初回作成 / 再開
+#   dcx exec -- cmd args...        container 内で実行（exit code をそのまま返す）
+#   dcx exec -C relpath -- cmd...  workspaceFolder 相対の subdir で実行
+#   dcx shell                      container 内で対話 shell
+#   dcx status                     解決した workspace / config を表示
+#   dcx -- cmd args...             exec の短縮形
+#
+# 方針: host への自動 fallback は絶対にしない。devcontainer が無ければ exit 2。
+#       workspace root = $DEVCONTAINER_WORKSPACE → git toplevel → cwd。
+#       agent（claude/codex 等）を起動する側は DEVCONTAINER_WORKSPACE を渡すと安定する。
+set -euo pipefail
+
+die() {
+  echo "dcx: $*" >&2
+  exit 1
+}
+
+command -v devcontainer >/dev/null || die "devcontainer CLI が無い（dotfiles server profile を setup せよ）"
+
+resolve_root() {
+  if [ -n "${DEVCONTAINER_WORKSPACE:-}" ]; then
+    (cd "$DEVCONTAINER_WORKSPACE" && pwd -P)
+    return
+  fi
+  local top
+  if top="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+    (cd "$top" && pwd -P)
+  else
+    pwd -P
+  fi
+}
+
+root="$(resolve_root)"
+
+# config は自動対応を2つに限定。曖昧（複数/ネスト）は暗黙選択せず、明示（DEVCONTAINER_CONFIG）を促す。
+find_config() {
+  if [ -n "${DEVCONTAINER_CONFIG:-}" ]; then
+    printf '%s\n' "$DEVCONTAINER_CONFIG"
+    return 0
+  fi
+  if [ -f "${root}/.devcontainer/devcontainer.json" ]; then
+    printf '%s\n' "${root}/.devcontainer/devcontainer.json"
+  elif [ -f "${root}/.devcontainer.json" ]; then
+    printf '%s\n' "${root}/.devcontainer.json"
+  else
+    return 2
+  fi
+}
+
+cfg="$(find_config)" || {
+  echo "dcx: devcontainer 設定が見つからない（${root}）" >&2
+  exit 2
+}
+
+dc_args=(--workspace-folder "$root")
+[ -n "${DEVCONTAINER_CONFIG:-}" ] && dc_args+=(--config "$DEVCONTAINER_CONFIG")
+
+hash_str() {
+  if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi
+}
+
+cmd="${1:-}"
+[ $# -gt 0 ] && shift || true
+
+case "$cmd" in
+  up)
+    # 並行 dev() 対策: workspace ごとに flock（flock が無い環境=mac 等では素通し）
+    if command -v flock >/dev/null; then
+      lock_dir="${XDG_RUNTIME_DIR:-/tmp}/dcx-locks"
+      mkdir -p "$lock_dir"
+      lock_file="${lock_dir}/$(printf '%s' "$root" | hash_str | awk '{print $1}').lock"
+      exec 9>"$lock_file"
+      flock 9
+    fi
+    devcontainer up "${dc_args[@]}"
+    ;;
+  exec)
+    relc=""
+    if [ "${1:-}" = "-C" ]; then
+      relc="${2:-}"
+      shift 2 || die "exec -C: パスが無い"
+    fi
+    [ "${1:-}" = "--" ] && shift
+    [ $# -gt 0 ] || die "exec: 実行コマンドが無い"
+    case "$relc" in
+      *..*) die "-C に .. は使えない（workspaceFolder 相対のみ）" ;;
+    esac
+    if [ -n "$relc" ]; then
+      devcontainer exec "${dc_args[@]}" /bin/sh -c 'cd "$1" && shift && exec "$@"' sh "$relc" "$@"
+    else
+      devcontainer exec "${dc_args[@]}" "$@"
+    fi
+    ;;
+  shell)
+    devcontainer exec "${dc_args[@]}" bash -l 2>/dev/null || devcontainer exec "${dc_args[@]}" sh -l
+    ;;
+  status)
+    echo "workspace: $root"
+    echo "config:    $cfg"
+    ;;
+  --)
+    [ $# -gt 0 ] || die "実行コマンドが無い"
+    devcontainer exec "${dc_args[@]}" "$@"
+    ;;
+  "" | help | -h | --help)
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+  *)
+    die "unknown subcommand: $cmd（up|exec|shell|status）"
+    ;;
+esac

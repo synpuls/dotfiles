@@ -1,0 +1,67 @@
+status	key	command
+Composition	Backspace	Backspace
+Conversion	Backspace	Cancel
+Precomposition	Backspace	Revert
+Composition	Ctrl a	MoveCursorToBeginning
+Conversion	Ctrl a	SegmentFocusFirst
+Composition	Ctrl b	MoveCursorLeft
+Conversion	Ctrl b	SegmentFocusLeft
+Composition	Ctrl d	Delete
+Conversion	Ctrl d	SegmentFocusRight
+Prediction	Ctrl Delete	DeleteSelectedCandidate
+Composition	Ctrl e	MoveCursorToEnd
+Conversion	Ctrl e	ConvertPrev
+Composition	Ctrl f	MoveCursorRight
+Conversion	Ctrl f	SegmentFocusRight
+Composition	Ctrl g	Cancel
+Composition	Ctrl h	Backspace
+Conversion	Ctrl h	Cancel
+Conversion	Ctrl i	SegmentWidthShrink
+Composition	Ctrl Left	MoveCursorToBeginning
+Conversion	Ctrl Left	SegmentFocusFirst
+Composition	Ctrl m	Commit
+Composition	Ctrl m	Commit
+Conversion	Ctrl m	Commit
+Suggestion	Ctrl n	PredictAndConvert
+Conversion	Ctrl n	ConvertNext
+Conversion	Ctrl o	SegmentWidthExpand
+Conversion	Ctrl p	ConvertPrev
+Conversion	Ctrl q	SegmentWidthShrink
+Composition	Ctrl Right	MoveCursorToEnd
+Conversion	Ctrl Right	SegmentFocusLast
+Composition	Delete	Delete
+Suggestion	Down	PredictAndConvert
+Conversion	Down	ConvertNext
+Composition	Enter	Commit
+Conversion	Enter	Commit
+Composition	ESC	Cancel
+Conversion	ESC	Cancel
+DirectInput	Henkan	IMEOn
+Composition	Home	MoveCursorToBeginning
+Conversion	Home	SegmentFocusFirst
+Composition	Left	MoveCursorLeft
+Conversion	Left	SegmentFocusLeft
+Precomposition	Muhenkan	IMEOff
+Composition	Right	MoveCursorRight
+Conversion	Right	SegmentFocusRight
+Conversion	Shift Left	SegmentWidthShrink
+Conversion	Shift Right	SegmentWidthExpand
+Conversion	Shift Tab	ConvertPrev
+Conversion	Shift Up	ConvertPrevPage
+Composition	Space	Convert
+Precomposition	Space	InsertSpace
+Conversion	Space	ConvertNext
+Composition	Tab	PredictAndConvert
+Conversion	Tab	PredictAndConvert
+Conversion	Up	ConvertPrev
+Composition	Kanji	IMEOff
+Composition	OFF	IMEOff
+Composition	ON	IMEOn
+Conversion	Kanji	IMEOff
+Conversion	OFF	IMEOff
+Conversion	ON	IMEOn
+DirectInput	Kanji	IMEOn
+DirectInput	ON	IMEOn
+Precomposition	Kanji	IMEOff
+Precomposition	OFF	IMEOff
+Precomposition	ON	IMEOn

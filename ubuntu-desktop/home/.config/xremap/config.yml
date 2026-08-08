@@ -1,0 +1,116 @@
+# keypress_delay_ms: 20
+
+modmap:
+  - name: SandS
+    remap:
+      Space: [Shift_L, Space]
+
+  - name: ThinkPad(only wezterm)
+    device:
+      only: "AT Translated Set 2 keyboard"
+    application:
+      only: "wezterm"
+    remap:
+      CapsLock: Tab
+      ALT_L: [SUPER_L, Muhenkan]
+      ALT_R: Ctrl_R
+      SUPER_L: ALT_L
+      CTRL_R: [ALT_L, Henkan]
+
+  - name: ThinkPad
+    device:
+      only: "AT Translated Set 2 keyboard"
+    application:
+      not: wezterm
+    remap:
+      CapsLock: Tab
+      ALT_L: [CTRL_R, Muhenkan]
+      ALT_R: SUPER_L
+      SUPER_L: ALT_L
+      CTRL_R: [ALT_L, Henkan]
+
+  - name: Kinesis(only wezterm)
+    device:
+      only: ["Kinesis Advantage2 Keyboard", "HID 05f3:0007"]
+    application:
+      only: wezterm
+    remap:
+      ALT_R: [ALT_R, Henkan]
+      SUPER_L: [SUPER_L, Muhenkan]
+
+  - name: Kinesis
+    device:
+      only: ["Kinesis Advantage2 Keyboard", "HID 05f3:0007"]
+    application:
+      not: wezterm
+    remap:
+      ALT_R: [ALT_R, Henkan]
+      SUPER_L: [CTRL_R, Muhenkan]
+      CTRL_L: SUPER_L
+
+keymap:
+  - name: Default
+    application:
+      not: wezterm
+    remap:
+      # 移動
+      SUPER-a: Home
+      SUPER-e: End
+      SUPER-b: Left
+      SUPER-m: Left
+      SUPER-f: Right
+      SUPER-n: Down
+      SUPER-p: Up
+      SUPER-d: Delete
+      SUPER-j: Enter
+
+      # 選択
+      CONTROL_R-SHIFT-Left: SHIFT-Home
+      CONTROL_R-SHIFT-Right: SHIFT-End
+      SUPER-y: SHIFT-Left
+      SUPER-u: SHIFT-Home
+      SUPER-i: SHIFT-Right
+      SUPER-o: SHIFT-End
+
+      # 削除
+      SUPER-h: Backspace
+      SUPER-w: C-Backspace
+      SUPER-Backspace: C-Backspace
+      SUPER-Delete: C-Delete
+      ALT-Backspace: C-Backspace
+      CONTROL_R-Backspace: C-SHIFT-Backspace
+      ALT-Delete: C-Delete
+
+      # ページ移動
+      CTRL-Up: Home
+      CTRL-Down: End
+      CTRL-Left: Alt-Left
+      CTRL-Right: Alt-Right
+
+  - name: Wezterm
+    application:
+      only: wezterm
+    remap:
+      CTRL-m: CTRL-b
+      Esc: [Esc, Muhenkan]
+
+  - name: Switch App
+    application:
+      not: wezterm
+    remap:
+      CTRL-Tab: SUPER-Tab
+      SUPER-Tab: CTRL-Tab
+
+  - name: Switch WorkSpace
+    application:
+      only: wezterm
+    remap:
+      CTRL-Right: SUPER-PageUp
+      CTRL-Left: SUPER-PageDown
+
+  - name: Switch WorkSpace2
+    application:
+      not: wezterm
+    remap:
+      SUPER-Right: SUPER-PageUp
+      SUPER-Left: SUPER-PageDown

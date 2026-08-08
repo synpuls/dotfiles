@@ -1,0 +1,4 @@
+# genlocal.sh の除外リスト(この層からの相対パス。ディレクトリは配下ごと)
+
+home/.config/systemd    # unit はファイル名固定。上書きは drop-in で
+home/.config/copyq      # GUI が生成する設定

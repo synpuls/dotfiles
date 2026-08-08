@@ -1,0 +1,4 @@
+# genlocal.sh の除外リスト(この層からの相対パス。ディレクトリは配下ごと)
+
+home/.config/neofetch/images    # バイナリ
+vscode                          # settings.json に include の仕組みがない

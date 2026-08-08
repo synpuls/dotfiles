@@ -1,0 +1,19 @@
+# マシンローカル・秘密は *.local 規約(README 参照)
+*.local
+!.local/
+*.local.*
+
+# SSH 鍵は git 管理しない。config だけ追跡(synpuls block のみ・機密は ~/.ssh/config.local へ)
+**/home/.ssh/*
+!**/home/.ssh/config
+
+# karabiner が symlink 越しに書き込むバックアップ
+mac/home/.config/karabiner/automatic_backups/
+
+# install スクリプトが落とすアーカイブ(/ を外すと .config/lazygit に当たる)
+/lazygit*
+/wezterm-*
+
+# python
+__pycache__/
+*.pyc

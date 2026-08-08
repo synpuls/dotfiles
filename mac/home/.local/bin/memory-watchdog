@@ -1,0 +1,119 @@
+#!/bin/bash
+set -u
+
+CONFIG="${MEMORY_WATCHDOG_CONFIG:-$HOME/.config/memory-watchdog/config}"
+[ -r "$CONFIG" ] && . "$CONFIG"
+
+CHROME_WARN_GIB="${CHROME_WARN_GIB:-20}"
+WEZTERM_WARN_GIB="${WEZTERM_WARN_GIB:-10}"
+SYSTEM_FREE_WARN_PERCENT="${SYSTEM_FREE_WARN_PERCENT:-15}"
+NOTIFY_COOLDOWN_SECONDS="${NOTIFY_COOLDOWN_SECONDS:-1800}"
+
+LOG_DIR="$HOME/Library/Logs/memory-watchdog"
+STATE_DIR="$HOME/Library/Caches/memory-watchdog"
+LOG_FILE="$LOG_DIR/watchdog.log"
+mkdir -p "$LOG_DIR" "$STATE_DIR"
+
+# Keep the routine log bounded. Incident snapshots are retained separately.
+if [ -f "$LOG_FILE" ] && [ "$(stat -f %z "$LOG_FILE" 2>/dev/null || echo 0)" -gt 5242880 ]; then
+  mv -f "$LOG_FILE" "$LOG_FILE.1"
+fi
+
+now_epoch=$(date +%s)
+timestamp=$(date '+%Y-%m-%d %H:%M:%S %z')
+process_file=$(mktemp "${TMPDIR:-/tmp}/memory-watchdog.XXXXXX") || exit 1
+trap 'rm -f "$process_file"' EXIT
+ps -axo pid=,ppid=,rss=,command= > "$process_file" || exit 1
+
+# Chrome includes normal Chrome helpers, headless Chrome, and automation
+# watchdogs. WezTerm includes wezterm-gui plus every recursive descendant so
+# that terminal-started jobs cannot hide behind the terminal's app grouping.
+usage=$(
+  awk '
+    {
+      pid=$1; ppid[pid]=$2; rss[pid]=$3
+      $1=$2=$3=""; cmd[pid]=$0
+      if ($0 ~ /\/Applications\/Google Chrome\.app\// ||
+          $0 ~ /chrome-headless-shell/ || $0 ~ /chrome-devtools-mcp/) chrome[pid]=1
+      if ($0 ~ /\/WezTerm\.app\/Contents\/MacOS\/wezterm-gui/) wezroot[pid]=1
+    }
+    END {
+      changed=1
+      while (changed) {
+        changed=0
+        for (pid in ppid)
+          if (!weztree[pid] && (wezroot[pid] || weztree[ppid[pid]])) {
+            weztree[pid]=1; changed=1
+          }
+      }
+      for (pid in rss) {
+        if (chrome[pid]) chrome_kb += rss[pid]
+        if (weztree[pid]) wezterm_kb += rss[pid]
+      }
+      printf "chrome_kb=%d\nwezterm_kb=%d\n", chrome_kb, wezterm_kb
+    }
+  ' "$process_file"
+)
+eval "$usage"
+
+free_percent=$(memory_pressure -Q 2>/dev/null | awk -F': ' '/System-wide memory free percentage/ {gsub(/%/, "", $2); print $2; exit}')
+free_percent="${free_percent:-100}"
+
+chrome_gib=$(awk -v kb="$chrome_kb" 'BEGIN {printf "%.1f", kb/1048576}')
+wezterm_gib=$(awk -v kb="$wezterm_kb" 'BEGIN {printf "%.1f", kb/1048576}')
+printf '%s chrome=%sGiB wezterm_tree=%sGiB system_free=%s%%\n' \
+  "$timestamp" "$chrome_gib" "$wezterm_gib" "$free_percent" >> "$LOG_FILE"
+
+snapshot() {
+  category="$1"
+  snapshot_file="$LOG_DIR/incident-$(date '+%Y%m%d-%H%M%S')-${category}.log"
+  {
+    echo "category=$category"
+    echo "timestamp=$timestamp"
+    echo "chrome=${chrome_gib}GiB wezterm_tree=${wezterm_gib}GiB system_free=${free_percent}%"
+    echo
+    echo "== memory_pressure =="
+    memory_pressure -Q 2>&1
+    echo
+    echo "== vm_stat =="
+    vm_stat 2>&1
+    echo
+    echo "== top processes by RSS =="
+    sort -k3 -nr "$process_file" | head -100
+  } > "$snapshot_file"
+  echo "$snapshot_file"
+}
+
+notify_once() {
+  category="$1"
+  message="$2"
+  state_file="$STATE_DIR/notified-$category"
+  last=0
+  [ -r "$state_file" ] && read -r last < "$state_file"
+  case "$last" in ''|*[!0-9]*) last=0 ;; esac
+  if [ $((now_epoch - last)) -lt "$NOTIFY_COOLDOWN_SECONDS" ]; then
+    return
+  fi
+  printf '%s\n' "$now_epoch" > "$state_file"
+  evidence=$(snapshot "$category")
+  /usr/bin/osascript - "$message" <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run argv
+  display notification (item 1 of argv) with title "Memory Watchdog" sound name "Basso"
+end run
+APPLESCRIPT
+  printf '%s ALERT %s evidence=%s\n' "$timestamp" "$message" "$evidence" >> "$LOG_FILE"
+}
+
+chrome_warn_kb=$((CHROME_WARN_GIB * 1048576))
+wezterm_warn_kb=$((WEZTERM_WARN_GIB * 1048576))
+
+if [ "$chrome_kb" -ge "$chrome_warn_kb" ]; then
+  notify_once chrome "Chrome系プロセスが ${chrome_gib} GiB 使用しています"
+fi
+if [ "$wezterm_kb" -ge "$wezterm_warn_kb" ]; then
+  notify_once wezterm "WezTermと子プロセスが ${wezterm_gib} GiB 使用しています"
+fi
+if [ "$free_percent" -le "$SYSTEM_FREE_WARN_PERCENT" ]; then
+  notify_once system "システムの空きメモリが ${free_percent}% です"
+fi
+

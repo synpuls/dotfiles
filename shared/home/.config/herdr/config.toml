@@ -1,0 +1,77 @@
+onboarding = false
+
+[terminal]
+shell_mode = "auto"
+new_cwd = "follow"
+
+[keys]
+prefix = "ctrl+s"
+
+# Keep existing shell/editor and Karabiner/xremap bindings authoritative.
+# Herdr's default ctrl+b prefix conflicts with ctrl+m -> ctrl+b remaps.
+help = ""
+settings = ""
+detach = "prefix+q"
+reload_config = ""
+open_notification_target = ""
+workspace_picker = ""
+goto = ""
+new_workspace = "prefix+shift+t"
+new_worktree = ""
+open_worktree = ""
+remove_worktree = ""
+rename_workspace = ""
+close_workspace = ""
+previous_workspace = "prefix+k"
+next_workspace = "prefix+j"
+previous_agent = ""
+next_agent = ""
+focus_agent = ""
+remote_image_paste = ""
+new_tab = "prefix+t"
+rename_tab = ""
+previous_tab = "prefix+h"
+next_tab = "prefix+l"
+switch_tab = ""
+switch_workspace = ""
+close_tab = "prefix+w"
+rename_pane = ""
+edit_scrollback = ""
+focus_pane_left = ""
+focus_pane_down = ""
+focus_pane_up = ""
+focus_pane_right = ""
+cycle_pane_next = "ctrl+tab"
+cycle_pane_previous = "ctrl+shift+tab"
+last_pane = ""
+split_vertical = ""
+split_horizontal = ""
+close_pane = ""
+zoom = ""
+resize_mode = ""
+toggle_sidebar = ""
+navigate_workspace_up = ""
+navigate_workspace_down = ""
+navigate_pane_left = ""
+navigate_pane_down = ""
+navigate_pane_up = ""
+navigate_pane_right = ""
+
+[ui]
+prompt_new_tab_name = false
+mouse_capture = true
+confirm_close = true
+
+agent_panel_sort = "spaces"
+[ui.toast]
+delivery = "off"
+
+# Suppress the "copied to clipboard" toast on mouse selection.
+[ui.toast.clipboard]
+enabled = false
+
+[ui.sound]
+enabled = false
+
+[experimental]
+pane_history = false
