@@ -183,49 +183,6 @@ function dev() {
   # nvim(現在 tab)に居るので focus 変更は不要。
 }
 
-# work: devcontainer 前提の「仕事用」tab を Herdr workspace に並べる。
-#   dev() と違い、まず dcx up で project の devcontainer を起動し、
-#   nvim(host 編集) / claude / codex(host・DEVCONTAINER_WORKSPACE 付き) / container(dcx shell) を作る。
-#   テスト/build は container tab か `dcx -- <cmd>` で container 内実行する。
-function work() {
-  [[ -n ${HERDR_ENV:-} && -n ${HERDR_WORKSPACE_ID:-} ]] || {
-    echo "work: Herdr の workspace 内で実行してください" >&2; return 1; }
-  command -v herdr >/dev/null && command -v jq >/dev/null || {
-    echo "work: herdr と jq が必要です" >&2; return 1; }
-  command -v dcx >/dev/null || { echo "work: dcx が必要です" >&2; return 1; }
-
-  local cwd="$PWD" root
-  root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || root="$cwd"
-
-  # devcontainer が無ければ work の意味が無い（dev を使う）。
-  if ! DEVCONTAINER_WORKSPACE="$root" dcx status >/dev/null 2>&1; then
-    echo "work: この project に devcontainer が無い（dev を使うか devcontainer を用意）" >&2
-    return 2
-  fi
-
-  # container を起動（初回は image pull/build で時間がかかる）。失敗したら tab を作らず終了。
-  echo "work: dcx up ..."
-  DEVCONTAINER_WORKSPACE="$root" dcx up || { echo "work: dcx up に失敗" >&2; return 1; }
-
-  local ws="$HERDR_WORKSPACE_ID" spec label cmd resp pane
-
-  # 現在の tab を nvim(host 編集)として再利用。
-  [[ -n ${HERDR_PANE_ID:-} ]] && herdr pane run "$HERDR_PANE_ID" nvim >/dev/null
-
-  # claude / codex（host。DEVCONTAINER_WORKSPACE を渡し agent が正しい container を対象にできるように）。
-  for spec in "claude:claude" "codex:codex"; do
-    label=${spec%%:*}; cmd=${spec#*:}
-    resp=$(herdr tab create --workspace "$ws" --cwd "$root" --label "$label" --no-focus)
-    pane=$(printf '%s' "$resp" | jq -r '.result.root_pane.pane_id // empty')
-    [[ -n $pane ]] && herdr pane run "$pane" "DEVCONTAINER_WORKSPACE=${(q)root} $cmd" >/dev/null
-  done
-
-  # container tab: dcx shell（テスト/build を container 内で回す）。
-  resp=$(herdr tab create --workspace "$ws" --cwd "$root" --label container --no-focus)
-  pane=$(printf '%s' "$resp" | jq -r '.result.root_pane.pane_id // empty')
-  [[ -n $pane ]] && herdr pane run "$pane" "DEVCONTAINER_WORKSPACE=${(q)root} dcx shell" >/dev/null
-}
-
 
 eval "$(starship init zsh)"
 
