@@ -39,11 +39,29 @@ dotfiles/
 
 - `<machine>/home/.zshrc.local` — `.zshrc.common.zsh` の最後に source される
 - `<machine>/home/.gitconfig.local` — `.gitconfig` の include で読まれる
+  (※ **機微な git 名義は private companion が `~/.gitconfig.local` を上書き供給**する。下記「機微設定」節)
 - SSH 設定・鍵は `<machine>/home/.ssh/` に置き、このディレクトリ配下は git 管理しない
+  (※ **実 SSH 鍵・`~/.ssh/config.local` は private companion が 1Password から供給**する。同節)
+
+> `.local` / `genlocal.sh` は **非機密のローカル上書き専用**。実鍵・git 名義・sops など機微な設定は
+> dotfiles ではなく private companion(`synpuls/bootstrap`)が供給する(下記「機微設定」節)。
 
 `*.local` の生成: `.zshrc.local` / `.gitconfig.local` などは `./genlocal.sh` が作る。任意の
 ファイルは `./genlocal.sh <file>` で隣に `.local` を作れる(読み込む仕組みは公開側に書くこと)。
 除外は各層の `.genlocalignore`。一覧: `git ls-files --others --ignored --exclude-standard | grep '\.local'`
+
+## 機微設定(private companion = `synpuls/bootstrap`)
+
+公開できない機微設定 — 実 SSH 鍵 / git 名義(`~/.gitconfig.local`・`~/.gitconfig-work.local`)/
+`~/.ssh/config.local` / sops の age 鍵 — は **この public repo には置かない**。正本は **1Password**、
+別の **private repo [`synpuls/bootstrap`]** が `install.sh` で `$HOME` に配置する
+(repo が持つのは op:// 参照と生成レシピだけで、鍵の実体は入らない)。
+
+- 上の `.local` / `genlocal.sh` は **非機密のローカル上書き専用**。
+- 機微な `.gitconfig.local` / `.ssh` 系は **bootstrap が正**(`install.sh` が既存を退避して `$HOME` へ上書き配置)。
+- 前提: 1Password CLI(`op`)にサインイン済みであること(私鍵取得時に承認が入る)。
+
+→ 新マシンはこの 2 repo を順に流す: **① dotfiles(`init.sh` → `setup.sh`)→ ② `synpuls/bootstrap`(`install.sh`)**。
 
 ## セットアップ
 
@@ -64,6 +82,9 @@ SSH 鍵を用意し(ed25519 + パスフレーズ、`<machine>/home/.ssh/` 配下
 ssh -T git@github.com   # Hi <user>! を確認
 ./setup.sh
 ```
+
+機微設定(実 SSH 鍵・git 名義・sops)は続けて private companion を流す:
+`synpuls/bootstrap` を clone → `./install.sh`(詳細は上「機微設定」節)。
 
 server は `./init.sh` の後、**docker group と default shell(zsh)を反映するため一度 logout/login**
 してから `./setup.sh` を実行する。
