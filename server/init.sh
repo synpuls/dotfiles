@@ -22,7 +22,7 @@ sudo apt-get update
 # zsh もここで入れる（後段の chsh がこの時点で zsh を必要とするため。apt_list にもあり冪等）。
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg locales zsh
 sudo locale-gen en_US.UTF-8
-sudo locale-gen ja_JP.UTF-8 || true
+sudo update-locale LANG=en_US.UTF-8   # system default を en_US に（未設定だと C.UTF-8 のまま）
 
 # --- Docker（公式 repo・deb822・rootful。rootless は使わない=devcontainer 運用で単純） ---
 if ! command -v docker >/dev/null; then

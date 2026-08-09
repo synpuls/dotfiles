@@ -5,13 +5,9 @@ export PATH="$HOME/.local/bin:$PATH"
 # ※ 未 trust の project の mise 設定は既定で使わない（host に client toolchain を持ち込まない）。
 eval "$(mise activate zsh)"
 
-# locale（ja が生成済みなら ja、無ければ en にフォールバック）
-if locale -a 2>/dev/null | grep -qiE '^ja_JP\.utf-?8$'; then
-  export LANG=ja_JP.UTF-8
-else
-  export LANG=en_US.UTF-8
-fi
-export LC_ALL="$LANG"
+# locale（English/US。en_US.UTF-8 は server/init.sh が生成し system default にも設定する）
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
 # server host の nvim は汎用編集のみ（project LSP/test/build は devcontainer=dcx 側）。
 export SYNPULS_NVIM_PROFILE=host
