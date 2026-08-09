@@ -23,5 +23,6 @@ if [ ! -d "${HOME}/.zplug" ]; then
   git clone --depth 1 https://github.com/zplug/zplug "${HOME}/.zplug"
 fi
 # プラグインを非対話で導入（初回対話シェルが .zshrc の Install? プロンプトで止まるのを防ぐ）。
-# ZPLUG_AUTO_INSTALL=1 で .zshrc 側が確認を出さずに zplug install を走らせる。
-ZPLUG_AUTO_INSTALL=1 zsh -ic 'exit' 2>/dev/null || true
+# zplug は登録/導入に PTY を要する（TTY 無しだと zplug install が無言の no-op になる）ため
+# script(1) で擬似端末を与える。ZPLUG_AUTO_INSTALL=1 で .zshrc 側は確認を出さず走らせる。
+TERM=xterm ZPLUG_AUTO_INSTALL=1 script -qec 'zsh -ic exit' /dev/null >/dev/null 2>&1 || true
