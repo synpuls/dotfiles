@@ -1,0 +1,16 @@
+# Mac（日常ドライバ）の言語ランタイムを mise で一元管理する。server 用とは別系統。
+# 更新: version を書き換え → `mise install`（mise.lock も更新）→ commit。
+# global は 3 版だけ pin。プロジェクト別は .node-version/.ruby-version/.go-version（idiomatic）で解決。
+# 追加版は `mise install node@X`（インストールのみ）/永続は各 dir で `mise use node@X`。
+[tools]
+node = "22.22.3"
+ruby = "3.4.2"
+go = "1.25.6"
+
+[settings]
+# version+hash を mise.lock に固定して再現可能に（server と同方針）。
+lockfile = true
+# .node-version / .ruby-version / .go-version を尊重（anyenv 時代の per-project 版を継承）。
+idiomatic_version_file_enable_tools = ["node", "ruby", "go"]
+# package.json / Gemfile / go.mod の暗黙解決は無効（新たな暗黙切替を防ぐ）。
+idiomatic_version_file_disable_files = ["node:package.json", "ruby:Gemfile", "go:go.mod"]

@@ -9,16 +9,14 @@ export XDG_CONFIG_HOME="$HOME/.config"
 # ghcup-env
 [ -f "$HOME/.ghcup/env" ] && source "$HOME/.ghcup/env"
 
-export PATH="$HOME/.rbenv/bin:$PATH"
+# mise（版マネージャ）: node/ruby/go を有効化（anyenv から移行）。
+eval "$(mise activate zsh)"
 
 # zplug
 export ZPLUG_HOME=$HOMEBREW_PREFIX/opt/zplug
 source $ZPLUG_HOME/init.zsh
 
 source $HOME/.zshrc.common.zsh
-
-export PATH="$HOME/.anyenv/bin:$PATH"
-eval "$(anyenv init -)"
 
 export EDITOR=nvim
 
