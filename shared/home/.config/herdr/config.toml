@@ -27,7 +27,9 @@ next_workspace = "prefix+j"
 previous_agent = ""
 next_agent = ""
 focus_agent = ""
-remote_image_paste = ""
+# herdr --remote 時のみ有効。Ctrl+V でローカル(Mac)のクリップボード画像を
+# リモート pane(claude 等)へ橋渡しする。ローカル herdr 使用時は影響なし。
+remote_image_paste = "ctrl+v"
 new_tab = "prefix+t"
 rename_tab = ""
 previous_tab = "prefix+h"
