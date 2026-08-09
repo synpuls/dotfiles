@@ -16,6 +16,16 @@ local function shell(command)
 	end)
 end
 
+-- herdr の操作は「prefix 列を端末へ送る」方式にする。こうすると herdr が
+-- ローカルでも `herdr --remote`(thin client)でも、client がキー列を server へ
+-- 転送して同じ action が発火する。以前の shell('herdr ...') 方式は Mac 上の
+-- herdr CLI を叩くため、remote 時に Mac ローカル socket を叩いてしまい無効だった。
+-- prefix = Ctrl+S = \019。config.toml の [keys] 定義に対応させる。
+local PREFIX = "\019"
+local function herdr_key(seq)
+	return wezterm.action.SendString(PREFIX .. seq)
+end
+
 return {
 	default_prog = { "/bin/sh", "-lc", "PATH=" .. herdr_path .. ":$PATH; exec herdr" },
 
@@ -89,57 +99,26 @@ return {
 		-- Cmd+S: nvim(AstroNvim) の <Esc><leader>w = Save を叩く。herdr を経由して
 		-- pane(nvim) にそのまま渡る。reload-config は Cmd+R 側に集約。
 		{ key = "s", mods = "CMD", action = wezterm.action.SendString("\027 w") },
+		-- Cmd+R: herdr server reload-config。※ remote(herdr --remote)時は Mac 側 CLI を
+		-- 叩くため VM の server には効かない。VM 側 config を reload したい時は VM の
+		-- pane で `herdr server reload-config`(server の `r` alias)を使う。
 		{ key = "r", mods = "CMD", action = shell("herdr server reload-config >/dev/null") },
 
-		-- workspace の作成, 移動
-		{ key = "t", mods = "CMD|SHIFT", action = shell('herdr workspace create --cwd "$HOME" --focus >/dev/null') },
-		{
-			key = "j",
-			mods = "CMD",
-			action = shell(
-				'workspace_id=$(herdr workspace list | jq -r \'.result.workspaces as $workspaces | ($workspaces | map(select(.focused == true))[0].number | tonumber) as $n | ($workspaces | sort_by(.number | tonumber) | map(select((.number | tonumber) > $n)) | first // ($workspaces | sort_by(.number | tonumber) | first)).workspace_id // empty\'); [ -n "$workspace_id" ] && herdr workspace focus "$workspace_id" >/dev/null'
-			),
-		},
-		{
-			key = "k",
-			mods = "CMD",
-			action = shell(
-				'workspace_id=$(herdr workspace list | jq -r \'.result.workspaces as $workspaces | ($workspaces | map(select(.focused == true))[0].number | tonumber) as $n | ($workspaces | sort_by(.number | tonumber) | map(select((.number | tonumber) < $n)) | last // ($workspaces | sort_by(.number | tonumber) | last)).workspace_id // empty\'); [ -n "$workspace_id" ] && herdr workspace focus "$workspace_id" >/dev/null'
-			),
-		},
+		-- workspace の作成, 移動（prefix 列送出＝ローカル/リモート両対応）
+		-- ※ 旧 shell 版にあった「wrap-around 移動」「新規 workspace の cwd=$HOME」は
+		--    herdr ネイティブ action(new_workspace / next|previous_workspace)に置換。
+		{ key = "t", mods = "CMD|SHIFT", action = herdr_key("T") }, -- new_workspace (prefix+shift+t)
+		{ key = "j", mods = "CMD", action = herdr_key("j") }, -- next_workspace
+		{ key = "k", mods = "CMD", action = herdr_key("k") }, -- previous_workspace
 
 		-- tab の作成, 移動
-		{
-			key = "t",
-			mods = "CMD",
-			action = shell(
-				'workspace_id=$(herdr workspace list | jq -r \'.result.workspaces[] | select(.focused == true) | .workspace_id\' | head -n 1); [ -n "$workspace_id" ] && herdr tab create --workspace "$workspace_id" --focus >/dev/null'
-			),
-		},
-		{
-			key = "h",
-			mods = "CMD",
-			action = shell(
-				'workspace_id=$(herdr workspace list | jq -r \'.result.workspaces[] | select(.focused == true) | .workspace_id\' | head -n 1); tab_id=$(herdr tab list --workspace "$workspace_id" | jq -r \'.result.tabs as $tabs | ($tabs | map(select(.focused == true))[0].number | tonumber) as $n | ($tabs | sort_by(.number | tonumber) | map(select((.number | tonumber) < $n)) | last // ($tabs | sort_by(.number | tonumber) | last)).tab_id // empty\'); [ -n "$tab_id" ] && herdr tab focus "$tab_id" >/dev/null'
-			),
-		},
-		{
-			key = "l",
-			mods = "CMD",
-			action = shell(
-				'workspace_id=$(herdr workspace list | jq -r \'.result.workspaces[] | select(.focused == true) | .workspace_id\' | head -n 1); tab_id=$(herdr tab list --workspace "$workspace_id" | jq -r \'.result.tabs as $tabs | ($tabs | map(select(.focused == true))[0].number | tonumber) as $n | ($tabs | sort_by(.number | tonumber) | map(select((.number | tonumber) > $n)) | first // ($tabs | sort_by(.number | tonumber) | first)).tab_id // empty\'); [ -n "$tab_id" ] && herdr tab focus "$tab_id" >/dev/null'
-			),
-		},
+		{ key = "t", mods = "CMD", action = herdr_key("t") }, -- new_tab
+		{ key = "h", mods = "CMD", action = herdr_key("h") }, -- previous_tab
+		{ key = "l", mods = "CMD", action = herdr_key("l") }, -- next_tab
 
 		-- kill
-		-- Cmd+W は tab close。ただし tab が最後の 1 つなら workspace ごと閉じる。
-		-- tab_count が数値で取れない時は誤って workspace を消さず tab close に倒す。
-		{
-			key = "w",
-			mods = "CMD",
-			action = shell(
-				'pane=$(herdr pane current); workspace_id=$(printf "%s" "$pane" | jq -r \'.result.pane.workspace_id // empty\'); tab_id=$(printf "%s" "$pane" | jq -r \'.result.pane.tab_id // empty\'); tab_count=$(herdr tab list --workspace "$workspace_id" | jq -r \'.result.tabs | length\'); case "$tab_count" in \'\'|*[!0-9]*) [ -n "$tab_id" ] && herdr tab close "$tab_id" >/dev/null ;; *) if [ "$tab_count" -le 1 ]; then [ -n "$workspace_id" ] && herdr workspace close "$workspace_id" >/dev/null; else [ -n "$tab_id" ] && herdr tab close "$tab_id" >/dev/null; fi ;; esac'
-			),
-		},
+		-- ※ 旧 Cmd+W の「最後の tab なら workspace ごと閉じる」特別扱いは、herdr ネイティブ
+		--    close_tab に置換（=単純に tab を閉じる）。close-ws-if-last が要る場合は要相談。
+		{ key = "w", mods = "CMD", action = herdr_key("w") }, -- close_tab
 	},
 }
