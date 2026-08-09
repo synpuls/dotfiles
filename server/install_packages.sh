@@ -22,3 +22,6 @@ mise install
 if [ ! -d "${HOME}/.zplug" ]; then
   git clone --depth 1 https://github.com/zplug/zplug "${HOME}/.zplug"
 fi
+# プラグインを非対話で導入（初回対話シェルが .zshrc の Install? プロンプトで止まるのを防ぐ）。
+# ZPLUG_AUTO_INSTALL=1 で .zshrc 側が確認を出さずに zplug install を走らせる。
+ZPLUG_AUTO_INSTALL=1 zsh -ic 'exit' 2>/dev/null || true

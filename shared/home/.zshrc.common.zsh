@@ -233,9 +233,13 @@ zplug "zsh-users/zsh-history-substring-search"
 zplug "zsh-users/zsh-syntax-highlighting", defer:2
 zplug "zsh-users/zsh-autosuggestions"
 if ! zplug check --verbose; then
-  printf "Install? [y/N]: "
-  if read -q; then
-    echo; zplug install
+  if [[ -n ${ZPLUG_AUTO_INSTALL:-} ]]; then
+    zplug install            # provisioning 中は非対話で導入
+  elif [[ -t 0 ]]; then
+    printf "Install? [y/N]: "
+    if read -q; then
+      echo; zplug install
+    fi
   fi
 fi
 bindkey '^[OA' history-substring-search-up
