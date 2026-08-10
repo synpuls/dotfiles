@@ -6,7 +6,6 @@ fd-find
 git
 jq
 mosh
-peco
 ripgrep
 tree
 unzip
