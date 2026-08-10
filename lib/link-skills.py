@@ -8,15 +8,18 @@
      source = "owner/repo"   … npx skills add の引数
      skill  = "<name>"       … 複数 skill repo から 1 つ選ぶ(任意, npx の -s)
      path   = "dir"          … dotfiles 内の実体(上流の無い自作 skill 用, source と排他)
-  [all]    skills=[]  両エージェントに配る
-  [codex]  skills=[]  codex だけ
-  [claude] skills=[]  claude だけ
+  [all]         skills=[]  両エージェントに配る
+  [codex]       skills=[]  codex だけ
+  [claude]      skills=[]  claude だけ（個人 ~/.claude）
+  [claude-work] skills=[]  会社 claude だけ（~/.claude-work・業務用・Codex 不使用）
 
 配置（可視性）:
-  Codex は ~/.agents/skills を、Claude は ~/.claude/skills を読む。
-    all    → ~/.agents/skills に実体 + ~/.claude/skills から symlink
-    codex  → ~/.agents/skills に実体のみ
-    claude → ~/.claude/skills に実体のみ（~/.agents に置くと codex に漏れるため）
+  Codex は ~/.agents/skills を、個人 Claude は ~/.claude/skills を、会社 Claude は
+  ~/.claude-work/skills を読む（会社=Claude のみ・Codex 不使用）。
+    all         → ~/.agents/skills に実体 + ~/.claude/skills から symlink
+    codex       → ~/.agents/skills に実体のみ
+    claude      → ~/.claude/skills に実体のみ（~/.agents に置くと codex に漏れるため）
+    claude-work → ~/.claude-work/skills から ~/.agents の canonical 実体へ symlink
 
 所有権: この reconciler が入れた skill(state file)だけを収束対象にし、手置き skill は
   触らない。npx への配置は -a codex / -a claude-code で分ける。
@@ -41,6 +44,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 HOME = Path.home()
 AGENTS_SKILLS = HOME / ".agents" / "skills"
 CLAUDE_SKILLS = HOME / ".claude" / "skills"
+CLAUDE_WORK_SKILLS = HOME / ".claude-work" / "skills"
 BACKUP_DIR = HOME / ".agents" / "skill-backups"
 STATE_FILE = HOME / ".agents" / ".dotfiles-managed-skills.json"
 NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -85,13 +89,14 @@ def has_npx():
 def load_manifests(paths):
     """複数マニフェストを読み検証・union する。
 
-    return (specs, codex_set, claude_set):
-      specs      : {name: {"kind","source","skill"|"path"}}
-      codex_set  : ~/.agents に置く skill = [all]+[codex]
-      claude_set : ~/.claude に置く skill = [all]+[claude]
+    return (specs, codex_set, claude_set, claude_work_set):
+      specs           : {name: {"kind","source","skill"|"path"}}
+      codex_set       : ~/.agents に置く skill = [all]+[codex]
+      claude_set      : ~/.claude に置く skill = [all]+[claude]
+      claude_work_set : ~/.claude-work に置く skill = [claude-work]
     """
     specs = {}
-    buckets = {"all": [], "codex": [], "claude": []}
+    buckets = {"all": [], "codex": [], "claude": [], "claude-work": []}
     for path in paths:
         if not path.is_file():
             continue
@@ -116,7 +121,7 @@ def load_manifests(paths):
                 die(f"[{section}].skills must be an array ({path})")
             buckets[section].extend(names)
 
-    codex_set, claude_set = set(), set()
+    codex_set, claude_set, claude_work_set = set(), set(), set()
     for section, names in buckets.items():
         for name in names:
             if not NAME_RE.match(name):
@@ -127,7 +132,9 @@ def load_manifests(paths):
                 codex_set.add(name)
             if section in ("all", "claude"):
                 claude_set.add(name)
-    return specs, codex_set, claude_set
+            if section == "claude-work":
+                claude_work_set.add(name)
+    return specs, codex_set, claude_set, claude_work_set
 
 
 def points_into_dotfiles(path):
@@ -186,19 +193,22 @@ def ensure_content(dest_root, name, spec, agent):
     return True
 
 
-def ensure_claude_symlink(name):
-    """[all] 用: ~/.claude/skills/<name> -> ~/.agents/skills/<name>。"""
+def ensure_symlink(dest_root, name, label):
+    """<dest_root>/<name> -> ~/.agents/skills/<name>（canonical 実体）。
+
+    [all]→~/.claude、[claude-work]→~/.claude-work の両方で使う。
+    """
     canon = AGENTS_SKILLS / name
-    target = CLAUDE_SKILLS / name
+    target = dest_root / name
     if not (canon / "SKILL.md").is_file():
         return
     if target.is_symlink() and target.resolve() == canon.resolve():
         return
-    CLAUDE_SKILLS.mkdir(parents=True, exist_ok=True)
+    dest_root.mkdir(parents=True, exist_ok=True)
     if target.exists() or target.is_symlink():
         backup(target)
     target.symlink_to(canon)
-    info(f"claude {target} -> {canon}")
+    info(f"{label} {target} -> {canon}")
 
 
 def remove_entry(path, name):
@@ -223,29 +233,37 @@ def main():
         manifests = [Path(sys.argv[1])]
     else:
         manifests = [ROOT_DIR / "skills.toml", ROOT_DIR / "skills.local.toml"]
-    specs, codex_set, claude_set = load_manifests(manifests)
-    all_desired = codex_set | claude_set
+    specs, codex_set, claude_set, claude_work_set = load_manifests(manifests)
+    all_desired = codex_set | claude_set | claude_work_set
+    # canonical 実体（~/.agents）が必要な集合。claude-work は canonical から symlink するため含める。
+    # （npx は ~/.claude-work を直接ターゲットにできないので canonical を再利用する）
+    canonical_set = codex_set | claude_work_set
 
     managed = set(load_json(STATE_FILE, {"managed": []}).get("managed") or [])
 
-    # 1) ~/.agents（codex 可視）: [all]+[codex] の実体を用意
-    for name in sorted(codex_set):
+    # 1) ~/.agents（codex 可視 + canonical 実体の置き場）: [all]+[codex]+[claude-work] の実体を用意
+    for name in sorted(canonical_set):
         if ensure_content(AGENTS_SKILLS, name, specs[name], "codex"):
             managed.add(name)
 
-    # 2) ~/.claude（claude 可視）
+    # 2) ~/.claude（個人 claude 可視）
     for name in sorted(claude_set):
         if name in codex_set:
-            ensure_claude_symlink(name)          # [all]: canonical へ symlink
+            ensure_symlink(CLAUDE_SKILLS, name, "claude")   # [all]: canonical へ symlink
             managed.add(name)
         elif ensure_content(CLAUDE_SKILLS, name, specs[name], "claude-code"):
             managed.add(name)                    # [claude] 専用: 実体を直接
 
-    # 3) prune: managed のうち各 location の desired から外れた物を撤去
+    # 3) ~/.claude-work（会社 claude 可視）: [claude-work] を canonical 実体へ symlink
+    for name in sorted(claude_work_set):
+        ensure_symlink(CLAUDE_WORK_SKILLS, name, "claude-work")
+        managed.add(name)
+
+    # 4) prune: managed のうち各 location の desired から外れた物を撤去
     if AGENTS_SKILLS.is_dir():
         for entry in sorted(AGENTS_SKILLS.iterdir()):
             n = entry.name
-            if n in managed and n not in codex_set:
+            if n in managed and n not in canonical_set:
                 remove_entry(entry, n)
     if CLAUDE_SKILLS.is_dir():
         for entry in sorted(CLAUDE_SKILLS.iterdir()):
@@ -253,10 +271,17 @@ def main():
             if n in managed and n not in claude_set:
                 # ~/.claude 側は symlink(all の残骸) か実体(claude 専用の残骸)
                 remove_entry(entry, n)
+    if CLAUDE_WORK_SKILLS.is_dir():
+        for entry in sorted(CLAUDE_WORK_SKILLS.iterdir()):
+            n = entry.name
+            if n in managed and n not in claude_work_set:
+                remove_entry(entry, n)
 
     managed = {n for n in (managed | all_desired) if
                (AGENTS_SKILLS / n).exists() or (CLAUDE_SKILLS / n).exists()
-               or (AGENTS_SKILLS / n).is_symlink() or (CLAUDE_SKILLS / n).is_symlink()}
+               or (CLAUDE_WORK_SKILLS / n).exists()
+               or (AGENTS_SKILLS / n).is_symlink() or (CLAUDE_SKILLS / n).is_symlink()
+               or (CLAUDE_WORK_SKILLS / n).is_symlink()}
     save_json(STATE_FILE, {"managed": sorted(managed)})
     info("done")
 
