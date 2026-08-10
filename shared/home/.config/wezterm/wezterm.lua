@@ -88,8 +88,10 @@ return {
 
 	-- key
 	keys = {
-		{ key = "Tab", mods = "CTRL", action = wezterm.action.DisableDefaultAssignment },
-		{ key = "Tab", mods = "CTRL|SHIFT", action = wezterm.action.DisableDefaultAssignment },
+		-- Ctrl+Tab / Ctrl+Shift+Tab = wezterm のタブ切替(wezterm が消費し herdr へ渡さない)。
+		-- ※ herdr 側の cycle_pane(旧 ctrl+tab)は空にして pane 巡回を無効化している。
+		{ key = "Tab", mods = "CTRL", action = wezterm.action.ActivateTabRelative(1) },
+		{ key = "Tab", mods = "CTRL|SHIFT", action = wezterm.action.ActivateTabRelative(-1) },
 		{ key = "w", mods = "CMD", action = wezterm.action.DisableDefaultAssignment },
 		{ key = "q", mods = "CMD", action = wezterm.action.DisableDefaultAssignment },
 		{ key = "LeftArrow", mods = "CTRL", action = wezterm.action.DisableDefaultAssignment },
