@@ -24,6 +24,24 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnup
 sudo locale-gen en_US.UTF-8
 sudo update-locale LANG=en_US.UTF-8   # system default を en_US に（未設定だと C.UTF-8 のまま）
 
+# --- AppArmor: codex 同梱 bwrap にだけ userns を許可（Ubuntu 24.04 の制限は維持） ---
+# apparmor_restrict_unprivileged_userns=1（既定ハードニング）は残したまま、codex の bundled
+# bwrap だけ userns を許可する profile を入れる。これが無いと bwrap が uid map を作れず
+# "setting up uid map: Permission denied" で codex の workspace-write sandbox が落ちる。
+# codex の version でパスが変わるため attachment は glob。
+sudo tee /etc/apparmor.d/codex-bwrap >/dev/null <<'EOF'
+abi <abi/4.0>,
+include <tunables/global>
+
+# codex(mise install)同梱の bubblewrap のみ unprivileged user namespace を許可。
+# version でパスが変わるため glob。他バイナリは Ubuntu 既定の制限のまま。
+profile codex-bwrap /home/*/.local/share/mise/installs/codex/*/codex-resources/bwrap flags=(unconfined) {
+  userns,
+  include if exists <local/codex-bwrap>
+}
+EOF
+sudo apparmor_parser -r /etc/apparmor.d/codex-bwrap
+
 # --- Docker（公式 repo・deb822・rootful。rootless は使わない=devcontainer 運用で単純） ---
 if ! command -v docker >/dev/null; then
   sudo install -m 0755 -d /etc/apt/keyrings
