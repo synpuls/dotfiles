@@ -1,10 +1,12 @@
 # server の共通ツール。version をここに厳密固定し、mise.lock が backend/hash も pin する。
 # 更新: version を書き換え → `mise install`（mise.lock も更新される）→ commit。
-# node は devcontainer CLI / npx / mcp の control-plane 用。プロジェクトの言語 toolchain は
-# 各 repo の devcontainer が持つ（host には積まない）。
+# node は devcontainer CLI / npx / mcp の control-plane 用。
+# Model 1: 個人 host 開発用の言語(go 等)は host に積んでよい。ただし各プロジェクト repo の
+# 言語 toolchain は repo の devcontainer が持ち、host には積まず dcx で container 実行する。
 
 [tools]
 node = "24.19.0"
+go = "1.26.5" # 個人 host 開発用(プロジェクトの言語は devcontainer 側)
 neovim = "0.12.4"
 lazygit = "0.64.0"
 lazydocker = "0.25.2"
