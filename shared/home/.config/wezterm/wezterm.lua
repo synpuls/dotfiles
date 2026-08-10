@@ -105,9 +105,10 @@ return {
 		{ key = "r", mods = "CMD", action = shell("herdr server reload-config >/dev/null") },
 
 		-- workspace の作成, 移動（prefix 列送出＝ローカル/リモート両対応）
-		-- ※ 旧 shell 版にあった「wrap-around 移動」「新規 workspace の cwd=$HOME」は
-		--    herdr ネイティブ action(new_workspace / next|previous_workspace)に置換。
-		{ key = "t", mods = "CMD|SHIFT", action = herdr_key("T") }, -- new_workspace (prefix+shift+t)
+		-- ※ 旧 shell 版の「wrap-around 移動」は herdr ネイティブ action(next|previous_workspace)へ置換。
+		-- Cmd+Shift+T=「空の新規 workspace at $HOME」。new_cwd=follow だと native new_workspace が
+		--    現 cwd を継承する(=複製に見える)ため、zsh widget(^X^T)で --cwd $HOME 明示作成する。
+		{ key = "t", mods = "CMD|SHIFT", action = wezterm.action.SendString("\x18\x14") }, -- ^X^T = herdr-new-home-workspace
 		{ key = "j", mods = "CMD", action = herdr_key("j") }, -- next_workspace
 		{ key = "k", mods = "CMD", action = herdr_key("k") }, -- previous_workspace
 

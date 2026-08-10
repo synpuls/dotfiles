@@ -147,6 +147,19 @@ function peco-ghq-look() {
 zle -N peco-ghq-look
 bindkey '^G' peco-ghq-look
 
+# 空の新規 Herdr workspace を $HOME で作る(wezterm の Cmd+Shift+T が ^X^T を送って呼ぶ)。
+# new_cwd="follow" のため native new_workspace は現 cwd を継承する(=複製に見える)ので、
+# 明示的に --cwd $HOME で作る。pane 内 = server socket 経由なので herdr --remote でも効く。
+# 制約: zsh プロンプト上でのみ発火(peco-ghq-look=^G と同じ)。
+function herdr-new-home-workspace() {
+  if [[ -n ${HERDR_ENV:-} ]] && command -v herdr >/dev/null; then
+    herdr workspace create --cwd "$HOME" --focus >/dev/null 2>&1
+  fi
+  zle reset-prompt 2>/dev/null
+}
+zle -N herdr-new-home-workspace
+bindkey '^X^T' herdr-new-home-workspace
+
 # dev: 現在の Herdr workspace に開発用の 4 tab(nvim / claude / codex / zsh)を作る。
 #   実行 tab が余らないよう、dev を実行したこの tab を先頭の nvim tab として再利用し、
 #   claude / codex / zsh を続けて新規作成する（順番: nvim, claude, codex, zsh）。
