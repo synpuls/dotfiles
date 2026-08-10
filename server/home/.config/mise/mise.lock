@@ -280,6 +280,34 @@ url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip"
 version = "0.5.11"
 backend = "aqua:peco/peco"
 
+[tools.peco."platforms.linux-arm64"]
+url = "https://github.com/peco/peco/releases/download/v0.5.11/peco_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/peco/peco/releases/assets/100253669"
+
+[tools.peco."platforms.linux-arm64-musl"]
+url = "https://github.com/peco/peco/releases/download/v0.5.11/peco_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/peco/peco/releases/assets/100253669"
+
+[tools.peco."platforms.linux-x64"]
+url = "https://github.com/peco/peco/releases/download/v0.5.11/peco_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/peco/peco/releases/assets/100253665"
+
+[tools.peco."platforms.linux-x64-musl"]
+url = "https://github.com/peco/peco/releases/download/v0.5.11/peco_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/peco/peco/releases/assets/100253665"
+
+[tools.peco."platforms.macos-arm64"]
+url = "https://github.com/peco/peco/releases/download/v0.5.11/peco_darwin_arm64.zip"
+url_api = "https://api.github.com/repos/peco/peco/releases/assets/100253664"
+
+[tools.peco."platforms.macos-x64"]
+url = "https://github.com/peco/peco/releases/download/v0.5.11/peco_darwin_amd64.zip"
+url_api = "https://api.github.com/repos/peco/peco/releases/assets/100253663"
+
+[tools.peco."platforms.windows-x64"]
+url = "https://github.com/peco/peco/releases/download/v0.5.11/peco_windows_amd64.zip"
+url_api = "https://api.github.com/repos/peco/peco/releases/assets/100253670"
+
 [[tools.starship]]
 version = "1.26.0"
 backend = "aqua:starship/starship"
