@@ -27,7 +27,8 @@ local function herdr_key(seq)
 end
 
 return {
-	default_prog = { "/bin/sh", "-lc", "PATH=" .. herdr_path .. ":$PATH; exec herdr" },
+	-- default_prog は指定しない = 通常のログインシェル($SHELL)で起動する。
+	-- herdr を使いたいときは shell から明示的に `herdr` を叩く。
 
 	-- font
 	font = wezterm.font_with_fallback({
