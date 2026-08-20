@@ -18,9 +18,15 @@ starship = "1.26.0"
 herdr = "0.8.0"
 codex = "0.147.0" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
 awscli = "2.36.27" # AWS CLI v2(aqua で公式配布物)。llm-platform の AWS 構築用
+# terraform は repo 側の mise.toml / .terraform-version が勝つ。ここは host の既定版。
+terraform = "1.15.8"
+tflint = "0.64.0" # terraform の lint
 # 8.30.1 は github-pat 等を検出しない回帰版のため 8.28.0 に固定（実測で PAT 検出を確認）
 gitleaks = "8.28.0"
 
 [settings]
 # version+hash を mise.lock に固定して再現可能にする。
 lockfile = true
+# tenv/tfenv 互換の .terraform-version を読む(mise の既定は無効なので tool 単位で opt-in)。
+# 未導入版が書かれていれば auto_install が checksum 検証つきで導入する。
+idiomatic_version_file_enable_tools = ["terraform"]
