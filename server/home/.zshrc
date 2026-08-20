@@ -53,3 +53,38 @@ function _tf_target() {
 }
 function tpt() { _tf_target plan "$@"; }
 function tat() { _tf_target apply "$@"; }
+
+# 標準入力をクリップボードへ。この host は headless でシステムクリップボードが無いため、
+# OSC 52 で端末に渡して Mac 側へ届ける(herdr → WezTerm → Mac)。nvim の clipboard
+# provider と同じ経路。端末側の受信上限を超えると切り詰められ得る点に注意。
+function _osc52_copy() {
+  local b64
+  b64=$(base64 -w0) || return 1
+  { printf '\033]52;c;%s\a' "$b64" >/dev/tty; } 2>/dev/null ||
+    printf '\033]52;c;%s\a' "$b64"
+}
+
+# terraform plan -generate-config-out= は書き込み先にパスを要求し、既存ファイルには書かない。
+# 作業ディレクトリに tmp.tf を残さないよう mktemp -d の中に生成させ、中身をクリップボードへ
+# 送ってから tmp ごと捨てる。引数は terraform へ透過する(-target 等)。
+function tpg() {
+  local dir out rc
+  dir=$(mktemp -d) || return 1
+  out="$dir/generated.tf"
+  terraform plan -generate-config-out="$out" "$@"
+  rc=$?
+  if (( rc == 0 )) && [[ -s $out ]]; then
+    if _osc52_copy <"$out"; then
+      echo "tpg: クリップボードへコピーしました($(wc -l <"$out") 行 / $(wc -c <"$out") bytes)" >&2
+    else
+      echo "tpg: クリップボードへ送れませんでした。以下に出力します" >&2
+      cat "$out"
+      rc=1
+    fi
+  elif (( rc == 0 )); then
+    echo "tpg: 生成された config が空です(import ブロックはありますか)" >&2
+    rc=1
+  fi
+  rm -rf "$dir"
+  return $rc
+}
