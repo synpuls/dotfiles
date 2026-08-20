@@ -17,6 +17,7 @@ peco = "0.5.11"
 starship = "1.26.0"
 herdr = "0.8.0"
 codex = "0.147.0" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
+awscli = "2.36.27" # AWS CLI v2(aqua で公式配布物)。llm-platform の AWS 構築用
 # 8.30.1 は github-pat 等を検出しない回帰版のため 8.28.0 に固定（実測で PAT 検出を確認）
 gitleaks = "8.28.0"
 
