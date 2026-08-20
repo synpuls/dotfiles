@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  herdr-continue-claude --every MINUTES --until TIME
+
+Send "続けて" to the Claude agent in the tab named "claude" in the current workspace.
+
+Options:
+  --every MINUTES  Interval in whole minutes (1 or greater).
+  --until TIME     Stop time, as HH:MM today or YYYY-MM-DDTHH:MM.
+  --message TEXT   Message to send (default: 続けて).
+  -h, --help       Show this help.
+
+Examples:
+  herdr-continue-claude --every 5 --until 18:30
+  herdr-continue-claude --every 10 --until 2026-08-14T22:00
+
+The first message is sent immediately. No message is sent at or after TIME.
+Press Ctrl-C to stop early.
+EOF
+}
+
+die() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
+
+interval_minutes=''
+until_text=''
+message='続けて'
+
+while (( $# > 0 )); do
+  case "$1" in
+    --every)
+      (( $# >= 2 )) || die '--every requires a value'
+      interval_minutes=$2
+      shift 2
+      ;;
+    --until)
+      (( $# >= 2 )) || die '--until requires a value'
+      until_text=$2
+      shift 2
+      ;;
+    --message)
+      (( $# >= 2 )) || die '--message requires a value'
+      message=$2
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      die "unknown argument: $1"
+      ;;
+  esac
+done
+
+[[ "${HERDR_ENV:-}" == 1 ]] || die 'this script must run inside a Herdr-managed pane'
+[[ -n "${HERDR_WORKSPACE_ID:-}" ]] || die 'Herdr workspace context is unavailable'
+[[ "$interval_minutes" =~ ^[1-9][0-9]*$ ]] || die '--every must be a whole number of minutes (1 or greater)'
+[[ -n "$until_text" ]] || die '--until is required'
+[[ -n "$message" ]] || die '--message must not be empty'
+command -v herdr >/dev/null || die 'herdr is not in PATH'
+command -v jq >/dev/null || die 'jq is required'
+
+case "$until_text" in
+  [0-2][0-9]:[0-5][0-9])
+    until_input="$(date +%F) $until_text"
+    ;;
+  [0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]T[0-2][0-9]:[0-5][0-9])
+    until_input=${until_text/T/ }
+    ;;
+  *)
+    die '--until must be HH:MM or YYYY-MM-DDTHH:MM'
+    ;;
+esac
+
+until_epoch=$(date --date "$until_input" +%s 2>/dev/null) || die "invalid stop time: $until_text"
+now_epoch=$(date +%s)
+(( until_epoch > now_epoch )) || die "stop time is not in the future: $until_text"
+interval_seconds=$(( interval_minutes * 60 ))
+
+tabs_json=$(herdr tab list --workspace "$HERDR_WORKSPACE_ID") || die 'could not list Herdr tabs'
+agents_json=$(herdr agent list) || die 'could not list Herdr agents'
+mapfile -t targets < <(
+  jq -r \
+    --arg workspace "$HERDR_WORKSPACE_ID" \
+    --argjson tabs "$(jq '.result.tabs' <<<"$tabs_json")" '
+      .result.agents[]
+      | select(.workspace_id == $workspace and .agent == "claude")
+      | . as $agent
+      | $tabs[]
+      | select(.tab_id == $agent.tab_id and .label == "claude")
+      | $agent.pane_id
+    ' <<<"$agents_json"
+)
+
+(( ${#targets[@]} > 0 )) || die 'no Claude agent was found in a tab named "claude" in the current workspace'
+(( ${#targets[@]} == 1 )) || die 'multiple Claude agents were found in tabs named "claude"; refusing an ambiguous target'
+target=${targets[0]}
+
+printf 'Sending %q every %s minute(s) to Claude in %s until %s.\n' \
+  "$message" "$interval_minutes" "$target" "$(date --date "@$until_epoch" '+%F %H:%M %Z')"
+
+while :; do
+  now_epoch=$(date +%s)
+  (( now_epoch < until_epoch )) || break
+
+  herdr agent prompt "$target" "$message" >/dev/null || die "could not send message to Claude in $target"
+  printf '[%s] sent to %s\n' "$(date '+%H:%M:%S')" "$target"
+
+  now_epoch=$(date +%s)
+  remaining=$(( until_epoch - now_epoch ))
+  (( remaining > 0 )) || break
+  sleep_seconds=$interval_seconds
+  (( remaining < sleep_seconds )) && sleep_seconds=$remaining
+  sleep "$sleep_seconds"
+done
+
+printf 'Reached stop time; no more messages will be sent.\n'

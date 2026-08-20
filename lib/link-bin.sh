@@ -10,6 +10,7 @@ mkdir -p "$BIN_DIR"
 # dotfiles が公開する内蔵 bin(このリポジトリ内)。
 BINS=(
   "dcx=${ROOT}/shared/bin/dcx"
+  "herdr-continue-claude=${ROOT}/shared/bin/herdr-continue-claude"
 )
 
 # マシン固有・非公開の bin は ~/.config/dotfiles/bins.local に "name=path"(1行1件)で書く。
