@@ -21,6 +21,10 @@ awscli = "2.36.27" # AWS CLI v2(aqua で公式配布物)。llm-platform の AWS 
 # terraform は repo 側の mise.toml / .terraform-version が勝つ。ここは host の既定版。
 terraform = "1.15.8"
 tflint = "0.64.0" # terraform の lint
+# terraform-tui(PyPI: tftui)。GitHub はソース配布のみ = aqua/ubi 不可のため pipx backend。
+# uv はその実行基盤(単体バイナリ。host に system python を足さない。mac も brew で uv 済)。
+uv = "0.12.5"
+"pipx:tftui" = "0.13.4"
 # 8.30.1 は github-pat 等を検出しない回帰版のため 8.28.0 に固定（実測で PAT 検出を確認）
 gitleaks = "8.28.0"
 
