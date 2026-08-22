@@ -6,6 +6,7 @@ fd-find
 git
 jq
 mosh
+python3-venv
 ripgrep
 tree
 unzip
