@@ -25,6 +25,11 @@ tflint = "0.64.0" # terraform の lint
 # uv はその実行基盤(単体バイナリ。host に system python を足さない。mac も brew で uv 済)。
 uv = "0.12.5"
 "pipx:tftui" = "0.13.4"
+# Civet の language server(バイナリ名は civet-lsp)。nvim の LSP 用。
+# registry に短縮名が無いので npm backend を明示する。
+# コンパイラ(@danielx/civet)は host に置かない。README の「host の nvim は汎用編集のみ、
+# project の toolchain は devcontainer 側」方針に従い、host はエディタ体験の分だけ持つ。
+"npm:@danielx/civet-language-server" = "0.3.42"
 # 8.30.1 は github-pat 等を検出しない回帰版のため 8.28.0 に固定（実測で PAT 検出を確認）
 gitleaks = "8.28.0"
 
