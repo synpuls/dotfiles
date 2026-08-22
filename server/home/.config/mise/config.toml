@@ -39,3 +39,7 @@ lockfile = true
 # tenv/tfenv 互換の .terraform-version を読む(mise の既定は無効なので tool 単位で opt-in)。
 # 未導入版が書かれていれば auto_install が checksum 検証つきで導入する。
 idiomatic_version_file_enable_tools = ["terraform"]
+# npm backend は実 npm に委ねる。mise 2026.8.3 内蔵の npm クライアント(aube)は非対話環境で
+# 必ず `user aborted` を返して失敗する(隔離した clean 環境の一括 mise install で再現)。
+# これが無いと server/install_packages.sh の mise install が新マシンで落ちる。
+npm.shell_out = true
