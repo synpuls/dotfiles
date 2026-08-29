@@ -67,7 +67,7 @@ function _osc52_copy() {
 # terraform plan -generate-config-out= は書き込み先にパスを要求し、既存ファイルには書かない。
 # 作業ディレクトリに tmp.tf を残さないよう mktemp -d の中に生成させ、中身をクリップボードへ
 # 送ってから tmp ごと捨てる。引数は terraform へ透過する(-target 等)。
-function tpg() {
+function tim() {
   local dir out rc
   dir=$(mktemp -d) || return 1
   out="$dir/generated.tf"
@@ -75,14 +75,14 @@ function tpg() {
   rc=$?
   if (( rc == 0 )) && [[ -s $out ]]; then
     if _osc52_copy <"$out"; then
-      echo "tpg: クリップボードへコピーしました($(wc -l <"$out") 行 / $(wc -c <"$out") bytes)" >&2
+      echo "tim: クリップボードへコピーしました($(wc -l <"$out") 行 / $(wc -c <"$out") bytes)" >&2
     else
-      echo "tpg: クリップボードへ送れませんでした。以下に出力します" >&2
+      echo "tim: クリップボードへ送れませんでした。以下に出力します" >&2
       cat "$out"
       rc=1
     fi
   elif (( rc == 0 )); then
-    echo "tpg: 生成された config が空です(import ブロックはありますか)" >&2
+    echo "tim: 生成された config が空です(import ブロックはありますか)" >&2
     rc=1
   fi
   rm -rf "$dir"
