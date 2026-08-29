@@ -15,8 +15,8 @@ ghq = "1.10.1"
 # apt の 0.5.10 は herdr --remote 越しで TUI 描画が壊れる(生エスケープ列が表示)。mise で 0.5.11 に固定。
 peco = "0.5.11"
 starship = "1.26.0"
-herdr = "0.8.0"
-codex = "0.147.0" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
+herdr = "0.8.2"
+codex = "0.149.1" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
 awscli = "2.36.27" # AWS CLI v2(aqua で公式配布物)。llm-platform の AWS 構築用
 # terraform は repo 側の mise.toml / .terraform-version が勝つ。ここは host の既定版。
 terraform = "1.15.8"
