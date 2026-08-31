@@ -88,3 +88,32 @@ function tim() {
   rm -rf "$dir"
   return $rc
 }
+
+# terraform module の雛形を作る。指定名のディレクトリに空の 3 ファイルを置く。
+#   tm vpc      → vpc/{main,outputs,variables}.tf
+#   tm vpc rds  → 複数まとめて作れる。modules/vpc のようにパスを含めてもよい
+# 既存ファイルは上書きせずスキップする(誤って書きかけの module を潰さないため)。
+function tm() {
+  (( $# )) || { echo "usage: tm <module-name> [module-name...]" >&2; return 2; }
+  local name f
+  local -a created skipped
+  for name in "$@"; do
+    [[ -n $name ]] || { echo "tm: モジュール名が空です" >&2; return 2; }
+    mkdir -p -- "$name" || return 1
+    created=(); skipped=()
+    for f in main.tf outputs.tf variables.tf; do
+      if [[ -e $name/$f ]]; then
+        skipped+=("$f")
+      else
+        : >"$name/$f" || return 1
+        created+=("$f")
+      fi
+    done
+    if (( ${#created[@]} )); then
+      echo "tm: $name/ に作成 → ${created[*]}"
+    fi
+    if (( ${#skipped[@]} )); then
+      echo "tm: $name/ は既存のためスキップ → ${skipped[*]}" >&2
+    fi
+  done
+}
