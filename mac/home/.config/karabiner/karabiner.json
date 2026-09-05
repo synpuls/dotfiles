@@ -38,7 +38,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -74,7 +74,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -106,7 +106,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -138,7 +138,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -202,7 +202,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -234,7 +234,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -270,7 +270,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -305,7 +305,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -341,7 +341,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }
@@ -376,7 +376,7 @@
                                 "conditions": [
                                     {
                                         "bundle_identifiers": [
-                                            "^(?!.*(Terminal|iterm2|wezterm)).+$"
+                                            "^(?!.*(Terminal|iterm2|wezterm|ghostty)).+$"
                                         ],
                                         "type": "frontmost_application_if"
                                     }

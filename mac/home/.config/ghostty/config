@@ -1,0 +1,37 @@
+# Font
+font-family = HackGen Console NF
+font-size = 16.8
+
+# Colors
+# Use the Ghostty equivalent of WezTerm's zenbones_dark scheme, then apply
+# the explicit overrides from the WezTerm configuration.
+theme = Zenbones Dark
+background = #000000
+cursor-color = #c6c8d1
+background-opacity = 0.95
+
+# Integrate the tab bar into the macOS titlebar and match the terminal background.
+macos-titlebar-style = tabs
+
+# Herdr
+# Send Herdr's Ctrl+S prefix followed by the configured action key. This also
+# overrides Ghostty's conflicting default shortcuts.
+keybind = super+h=text:\x13h
+keybind = super+j=text:\x13j
+keybind = super+k=text:\x13k
+keybind = super+l=text:\x13l
+keybind = super+t=text:\x13t
+keybind = super+w=text:\x13w
+
+# Create an empty Herdr workspace at $HOME via the zsh widget bound to ^X^T.
+keybind = super+shift+t=text:\x18\x14
+
+# Ghostty tab
+keybind = ctrl+shift+t=new_tab
+
+# Editor
+# AstroNvim: <Esc><leader>w
+keybind = super+s=text:\x1b w
+
+# Prevent accidentally quitting Ghostty.
+keybind = super+q=ignore
