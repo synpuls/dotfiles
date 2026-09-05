@@ -8,6 +8,7 @@ font-size = 16.8
 theme = Zenbones Dark
 background = #000000
 cursor-color = #c6c8d1
+cursor-style-blink = false
 background-opacity = 0.95
 
 # Integrate the tab bar into the macOS titlebar and match the terminal background.
