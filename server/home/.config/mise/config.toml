@@ -5,33 +5,36 @@
 # 言語 toolchain は repo の devcontainer が持ち、host には積まず dcx で container 実行する。
 
 [tools]
-node = "24.19.0"
-go = "1.26.5" # 個人 host 開発用(プロジェクトの言語は devcontainer 側)
-neovim = "0.12.4"
-lazygit = "0.64.0"
+node = "26.10.0"
+pnpm = "12.8.1"
+go = "1.27.1" # 個人 host 開発用(プロジェクトの言語は devcontainer 側)
+neovim = "0.12.5"
+lazygit = "0.65.1"
 lazydocker = "0.25.2"
 delta = "0.19.2"
-ghq = "1.10.1"
-# apt の 0.5.10 は herdr --remote 越しで TUI 描画が壊れる(生エスケープ列が表示)。mise で 0.5.11 に固定。
-peco = "0.5.11"
+ghq = "1.11.0"
+# apt の 0.5.10 は herdr --remote 越しで TUI 描画が壊れる(生エスケープ列が表示)。mise で 0.5.11 以上を使う(0.6.0 で崩れないことを確認済み)。
+peco = "0.6.0"
 starship = "1.26.0"
-herdr = "0.8.2"
-codex = "0.151.0" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
-awscli = "2.36.27" # AWS CLI v2(aqua で公式配布物)。llm-platform の AWS 構築用
+herdr = "0.9.1"
+codex = "0.159.0" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
+github-cli = "2.101.0" # GitHub CLI（実行ファイル: gh）
+awscli = { version = "2.37.6", symlink_bins = true } # AWS CLI v2(aqua で公式配布物)。llm-platform の AWS 構築用
+ecspresso = "2.8.7" # Amazon ECS デプロイツール
 # terraform は repo 側の mise.toml / .terraform-version が勝つ。ここは host の既定版。
-terraform = "1.15.8"
+terraform = "1.16.4"
 tflint = "0.64.0" # terraform の lint
 # terraform-tui(PyPI: tftui)。GitHub はソース配布のみ = aqua/ubi 不可のため pipx backend。
 # uv はその実行基盤(単体バイナリ。host に system python を足さない。mac も brew で uv 済)。
-uv = "0.12.5"
-"pipx:tftui" = "0.13.4"
+uv = "0.12.20"
+"pipx:tftui" = "0.14.1"
 # Civet の language server(バイナリ名は civet-lsp)。nvim の LSP 用。
 # registry に短縮名が無いので npm backend を明示する。
 # コンパイラ(@danielx/civet)は host に置かない。README の「host の nvim は汎用編集のみ、
 # project の toolchain は devcontainer 側」方針に従い、host はエディタ体験の分だけ持つ。
 "npm:@danielx/civet-language-server" = "0.3.42"
-# 8.30.1 は github-pat 等を検出しない回帰版のため 8.28.0 に固定（実測で PAT 検出を確認）
-gitleaks = "8.28.0"
+# pre-commit の秘密検査に使う。8.30.1 で protect --staged が github-pat を検出することを実測確認済み
+gitleaks = "8.30.1"
 
 [settings]
 # version+hash を mise.lock に固定して再現可能にする。
