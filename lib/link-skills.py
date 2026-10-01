@@ -1,30 +1,27 @@
 #!/usr/bin/env python3
-"""skills.toml を望ましい状態として各エージェントの skill を収束させる reconciler。
+"""skills.toml の宣言どおりに、各エージェントの skill ディレクトリへ symlink を張る。
 
-宣言的: マニフェストを編集して再実行すれば install / uninstall / relink が揃う。
+マニフェスト（skills.toml = commit 必須 / skills.local.toml = gitignore 任意, 両方 union）:
+  [skills.<name>]  取得元（どちらか一方）
+     source = "owner/repo[/dir]"  … GitHub repo（dir 省略 = repo 直下）。毎回最新に追従
+     path   = "dir"               … dotfiles 内の実体（shared/skills/ か skills.local/ 配下）
+  [all]         skills=[]  Codex + 個人 Claude
+  [codex]       skills=[]  Codex だけ        (~/.agents/skills)
+  [claude]      skills=[]  個人 Claude だけ  (~/.claude/skills)
+  [claude-work] skills=[]  会社 Claude だけ  (~/.claude-work/skills)
 
-マニフェスト（skills.toml = commit / skills.local.toml = gitignore, 両方 union）:
-  [skills.<name>]  取得元
-     source = "owner/repo"   … npx skills add の引数
-     skill  = "<name>"       … 複数 skill repo から 1 つ選ぶ(任意, npx の -s)
-     path   = "dir"          … dotfiles 内の実体(上流の無い自作 skill 用, source と排他)
-  [all]         skills=[]  両エージェントに配る
-  [codex]       skills=[]  codex だけ
-  [claude]      skills=[]  claude だけ（個人 ~/.claude）
-  [claude-work] skills=[]  会社 claude だけ（~/.claude-work・業務用・Codex 不使用）
+仕組み:
+  source の repo は ~/.local/share/dotfiles-skills/<owner>__<repo> に repo 丸ごと shallow clone し、
+  実行のたびに fetch + reset --hard で最新にする（楽観的追従。取得に失敗したら既存 checkout を使う）。
+  repo 丸ごとなのは、skill が repo 内の兄弟ディレクトリを相対参照することがあるため。
+  各 location の <name> は store か dotfiles 内の実体を指す symlink にする（実体はコピーしない）。
 
-配置（可視性）:
-  Codex は ~/.agents/skills を、個人 Claude は ~/.claude/skills を、会社 Claude は
-  ~/.claude-work/skills を読む（会社=Claude のみ・Codex 不使用）。
-    all         → ~/.agents/skills に実体 + ~/.claude/skills から symlink
-    codex       → ~/.agents/skills に実体のみ
-    claude      → ~/.claude/skills に実体のみ（~/.agents に置くと codex に漏れるため）
-    claude-work → ~/.claude-work/skills から ~/.agents の canonical 実体へ symlink
+所有権: 「store / shared/skills / skills.local を直接指す symlink」をこのスクリプトの物とみなす。
+  自分の物は張り替え・撤去し、それ以外の同名 entry（手置き）は触らず失敗として報告する。
 
-所有権: この reconciler が入れた skill(state file)だけを収束対象にし、手置き skill は
-  触らない。npx への配置は -a codex / -a claude-code で分ける。
+失敗が 1 つでもあれば非ゼロで終了する（他の skill の配置は続ける）。
 """
-import filecmp
+import argparse
 import json
 import os
 import re
@@ -37,17 +34,27 @@ from pathlib import Path
 try:
     import tomllib
 except ModuleNotFoundError:
-    print("link-skills: python tomllib not available (need 3.11+); skip", file=sys.stderr)
-    sys.exit(0)
+    print("link-skills: python tomllib not available (need 3.11+)", file=sys.stderr)
+    sys.exit(1)
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 HOME = Path.home()
-AGENTS_SKILLS = HOME / ".agents" / "skills"
-CLAUDE_SKILLS = HOME / ".claude" / "skills"
-CLAUDE_WORK_SKILLS = HOME / ".claude-work" / "skills"
-BACKUP_DIR = HOME / ".agents" / "skill-backups"
-STATE_FILE = HOME / ".agents" / ".dotfiles-managed-skills.json"
-NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+STORE = HOME / ".local" / "share" / "dotfiles-skills"
+GIT_BASE = "https://github.com"
+LOCATIONS = {
+    "codex": HOME / ".agents" / "skills",
+    "claude": HOME / ".claude" / "skills",
+    "claude-work": HOME / ".claude-work" / "skills",
+}
+SECTIONS = {"all": ["codex", "claude"], "codex": ["codex"], "claude": ["claude"],
+            "claude-work": ["claude-work"]}
+PATH_ROOTS = [ROOT_DIR / "shared" / "skills", ROOT_DIR / "skills.local"]
+# 旧実装（npx 版）の state。あれば記載 entry を撤去して消す（全マシン移行後にこの処理ごと削除）
+LEGACY_STATE = HOME / ".agents" / ".dotfiles-managed-skills.json"
+LEGACY_LOCATIONS = {"agents": "codex", "claude": "claude", "claude-work": "claude-work"}
+
+NAME_RE = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
+SOURCE_RE = re.compile(r"^([A-Za-z0-9-]+)/([A-Za-z0-9._-]+)(?:/(.+))?$")
 
 
 def info(msg):
@@ -63,226 +70,176 @@ def die(msg):
     sys.exit(1)
 
 
-def load_json(path, default):
-    try:
-        return json.loads(Path(path).read_text())
-    except Exception:
-        return default
-
-
-def save_json(path, value):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
-
-
-def backup(path):
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    dest = Path(tempfile.mkdtemp(prefix=f"{path.name}.", dir=BACKUP_DIR))
-    shutil.move(str(path), str(dest / path.name))
-    return dest
-
-
-def has_npx():
-    return shutil.which("npx") is not None
+def inside(path, root):
+    return path == root or root in path.parents
 
 
 def load_manifests(paths):
-    """複数マニフェストを読み検証・union する。
-
-    return (specs, codex_set, claude_set, claude_work_set):
-      specs           : {name: {"kind","source","skill"|"path"}}
-      codex_set       : ~/.agents に置く skill = [all]+[codex]
-      claude_set      : ~/.claude に置く skill = [all]+[claude]
-      claude_work_set : ~/.claude-work に置く skill = [claude-work]
-    """
-    specs = {}
-    buckets = {"all": [], "codex": [], "claude": [], "claude-work": []}
+    """マニフェストを検証して {name: spec} と {location: set(name)} を返す。"""
+    specs, desired, refs = {}, {loc: set() for loc in LOCATIONS}, []
     for path in paths:
-        if not path.is_file():
-            continue
         try:
             data = tomllib.loads(path.read_text())
         except tomllib.TOMLDecodeError as e:
             die(f"invalid manifest {path}: {e}")
+        if set(data) - {"skills", *SECTIONS}:
+            die(f"unknown section {sorted(set(data) - {'skills', *SECTIONS})} ({path})")
         for name, entry in (data.get("skills") or {}).items():
             if not NAME_RE.match(name):
-                die(f"invalid skill name in [skills.{name}] ({path})")
-            entry = entry or {}
-            source, rel = entry.get("source"), entry.get("path")
-            if bool(source) == bool(rel):
-                die(f"[skills.{name}] must have exactly one of source/path ({path})")
-            if source:
-                specs[name] = {"kind": "source", "source": source, "skill": entry.get("skill")}
+                die(f"invalid skill name [skills.{name}] ({path})")
+            if len(entry) != 1 or set(entry) - {"source", "path"}:
+                die(f"[skills.{name}] needs exactly one of source/path ({path})")
+            if "source" in entry:
+                m = SOURCE_RE.match(entry["source"])
+                if not m or any(p in ("", ".", "..") for p in (m.group(3) or "x").split("/")):
+                    die(f"[skills.{name}] invalid source {entry['source']!r} ({path})")
+                specs[name] = {"repo": (m.group(1), m.group(2)), "dir": m.group(3) or ""}
             else:
-                specs[name] = {"kind": "path", "path": rel}
-        for section in buckets:
-            names = (data.get(section) or {}).get("skills", [])
-            if not isinstance(names, list):
-                die(f"[{section}].skills must be an array ({path})")
-            buckets[section].extend(names)
+                target = (ROOT_DIR / entry["path"]).resolve()
+                if not any(root in target.parents for root in PATH_ROOTS):
+                    die(f"[skills.{name}] path must be under shared/skills or skills.local ({path})")
+                specs[name] = {"path": target}
+        for section, locs in SECTIONS.items():
+            sec = data.get(section) or {}
+            if set(sec) - {"skills"} or not isinstance(sec.get("skills", []), list):
+                die(f"[{section}] takes only skills = [...] ({path})")
+            refs += [(section, name, locs) for name in sec.get("skills", [])]
+    for section, name, locs in refs:
+        if name not in specs:
+            die(f"skill {name!r} in [{section}] but no [skills.{name}]")
+        for loc in locs:
+            desired[loc].add(name)
+    return specs, desired
 
-    codex_set, claude_set, claude_work_set = set(), set(), set()
-    for section, names in buckets.items():
+
+def migrate_legacy():
+    """旧 state に載っている entry だけを撤去し、全部済んだら state を消す。"""
+    if not LEGACY_STATE.exists():
+        return
+    data = json.loads(LEGACY_STATE.read_text())
+    managed = data.get("managed")
+    if data.get("version") != 2 or not isinstance(managed, dict) \
+            or set(managed) - set(LEGACY_LOCATIONS) \
+            or not all(isinstance(v, list) and all(NAME_RE.match(n) for n in v)
+                       for v in managed.values()):
+        die(f"unsupported legacy state {LEGACY_STATE}; inspect and remove it manually")
+    for key, names in managed.items():
         for name in names:
-            if not NAME_RE.match(name):
-                die(f"invalid skill name referenced: {name!r}")
-            if name not in specs:
-                die(f"skill {name!r} in [{section}] but no [skills.{name}]")
-            if section in ("all", "codex"):
-                codex_set.add(name)
-            if section in ("all", "claude"):
-                claude_set.add(name)
-            if section == "claude-work":
-                claude_work_set.add(name)
-    return specs, codex_set, claude_set, claude_work_set
+            p = LOCATIONS[LEGACY_LOCATIONS[key]] / name
+            if p.is_symlink() or p.is_file():
+                p.unlink()
+            elif p.is_dir():
+                shutil.rmtree(p)
+    LEGACY_STATE.unlink()
+    info(f"migrated: removed entries listed in {LEGACY_STATE}")
 
 
-def points_into_dotfiles(path):
-    if not path.is_symlink():
-        return False
-    return ROOT_DIR == path.resolve() or ROOT_DIR in path.resolve().parents
+def git(*args, cwd=None):
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+    proc = subprocess.run(["git", *args], cwd=cwd, env=env, capture_output=True, text=True)
+    return proc.returncode == 0, proc.stderr.strip()
 
 
-def link_target(path):
-    """symlink の 1 ホップ先を絶対パスに正規化（相対 symlink 対応）。"""
-    raw = os.readlink(path)
-    return Path(os.path.normpath(os.path.join(path.parent, raw)))
+def checkout_dir(repo):
+    return STORE / "__".join(repo).lower()
 
 
-def npx_add(name, spec, agent):
-    """source skill を指定 agent 向けに install。成功なら True。
-
-    成功判定は SKILL.md の有無。PromptScript 型は非ゼロ終了でも本体は入る。
-    """
-    if not has_npx():
-        warn(f"npx not found; cannot install {name}")
-        return False
-    cmd = ["npx", "--yes", "skills", "add", spec["source"], "-g", "-a", agent]
-    if spec.get("skill"):
-        cmd += ["-s", spec["skill"]]
-    info(f"install {name} -> {agent}")
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-    return True
-
-
-def ensure_content(dest_root, name, spec, agent):
-    """dest_root/<name> に実体を用意（source は npx、path は dotfiles への symlink）。"""
-    dest = dest_root / name
-    if (dest / "SKILL.md").is_file() and not (
-        dest.is_symlink() and not points_into_dotfiles(dest)
-    ):
-        return True
-    if spec["kind"] == "path":
-        target = (ROOT_DIR / spec["path"]).resolve()
-        if not (target / "SKILL.md").is_file():
-            warn(f"path skill {name}: {target}/SKILL.md not found; skip")
+def sync_repo(repo):
+    """store の checkout を最新にする。成功なら True（失敗しても既存 checkout は残る）。"""
+    d, slug = checkout_dir(repo), "/".join(repo)
+    if not d.is_symlink() and (d / ".git").is_dir() and git("rev-parse", "HEAD", cwd=d)[0]:
+        ok, err = git("fetch", "--depth", "1", "--no-tags", "origin", "HEAD", cwd=d)
+        if ok:
+            ok, err = git("reset", "--hard", "FETCH_HEAD", cwd=d)
+        if not ok:
+            warn(f"update {slug} failed; keep current checkout: {err}")
+        return ok
+    # 無い・壊れている → 一時ディレクトリに clone してから置き換える
+    STORE.mkdir(parents=True, exist_ok=True)
+    tmp = Path(tempfile.mkdtemp(prefix=f".{d.name}.", dir=STORE))
+    try:
+        ok, err = git("clone", "--depth", "1", "--no-tags", f"{GIT_BASE}/{slug}", str(tmp / "c"))
+        if not ok:
+            warn(f"clone {slug} failed: {err}")
             return False
-        if dest.is_symlink() and dest.resolve() == target:
-            return True
-        dest_root.mkdir(parents=True, exist_ok=True)
-        if dest.exists() or dest.is_symlink():
-            backup(dest)
-        dest.symlink_to(target)
-        info(f"link {dest} -> {target}")
+        if d.is_symlink() or d.is_file():
+            d.unlink()
+        elif d.exists():
+            shutil.rmtree(d)
+        (tmp / "c").rename(d)
+        info(f"cloned {slug}")
         return True
-    # source 型
-    npx_add(name, spec, agent)
-    if not (dest / "SKILL.md").is_file():
-        warn(f"install did not create {dest}/SKILL.md")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def link_target(p):
+    """symlink が直接指すパス（相対なら絶対化。最終到達先までは辿らない）。"""
+    return Path(os.path.normpath(os.path.join(p.parent, os.readlink(p))))
+
+
+def owned(p):
+    return p.is_symlink() and any(inside(link_target(p), r) for r in [STORE, *PATH_ROOTS])
+
+
+def place(dest, target):
+    """dest -> target の symlink を用意する。手置きの同名 entry があれば False。"""
+    if dest.is_symlink() and link_target(dest) == target:
+        return True
+    if owned(dest):
+        dest.unlink()
+    elif dest.exists() or dest.is_symlink():
+        warn(f"skip {dest}: not managed by dotfiles (remove it to let dotfiles manage)")
         return False
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.symlink_to(target)
+    info(f"link {dest} -> {target}")
     return True
-
-
-def ensure_symlink(dest_root, name, label):
-    """<dest_root>/<name> -> ~/.agents/skills/<name>（canonical 実体）。
-
-    [all]→~/.claude、[claude-work]→~/.claude-work の両方で使う。
-    """
-    canon = AGENTS_SKILLS / name
-    target = dest_root / name
-    if not (canon / "SKILL.md").is_file():
-        return
-    if target.is_symlink() and target.resolve() == canon.resolve():
-        return
-    dest_root.mkdir(parents=True, exist_ok=True)
-    if target.exists() or target.is_symlink():
-        backup(target)
-    target.symlink_to(canon)
-    info(f"{label} {target} -> {canon}")
-
-
-def remove_entry(path, name):
-    """指定 location の skill 実体だけを撤去する。
-
-    npx skills remove はグローバルで他 location(別エージェント)も巻き込むため使わない。
-    symlink は unlink、実体 dir は backup へ退避（filesystem 単位で per-location に閉じる）。
-    npx の lock がずれても reconciler は lock を参照しないので実害はない。
-    """
-    if not (path.exists() or path.is_symlink()):
-        return
-    if path.is_symlink():
-        path.unlink()
-        info(f"unlink {path}")
-    else:
-        backup(path)
-        info(f"remove {path}")
 
 
 def main():
-    if len(sys.argv) > 1:
-        manifests = [Path(sys.argv[1])]
-    else:
-        manifests = [ROOT_DIR / "skills.toml", ROOT_DIR / "skills.local.toml"]
-    specs, codex_set, claude_set, claude_work_set = load_manifests(manifests)
-    all_desired = codex_set | claude_set | claude_work_set
-    # canonical 実体（~/.agents）が必要な集合。claude-work は canonical から symlink するため含める。
-    # （npx は ~/.claude-work を直接ターゲットにできないので canonical を再利用する）
-    canonical_set = codex_set | claude_work_set
+    parser = argparse.ArgumentParser(description="skills.toml の宣言どおりに skill を配置する")
+    parser.add_argument("--manifest", type=Path, help="このマニフェストだけを読む")
+    args = parser.parse_args()
+    manifests = [args.manifest or ROOT_DIR / "skills.toml"]
+    if not manifests[0].is_file():
+        die(f"manifest not found: {manifests[0]}")
+    if not args.manifest and (ROOT_DIR / "skills.local.toml").is_file():
+        manifests.append(ROOT_DIR / "skills.local.toml")
+    specs, desired = load_manifests(manifests)
+    migrate_legacy()
+    used = set().union(*desired.values())
+    failed = set()
 
-    managed = set(load_json(STATE_FILE, {"managed": []}).get("managed") or [])
+    # 1) 宣言で使われている repo を最新にする
+    synced = {r: sync_repo(r) for r in sorted({specs[n]["repo"] for n in used if "repo" in specs[n]})}
 
-    # 1) ~/.agents（codex 可視 + canonical 実体の置き場）: [all]+[codex]+[claude-work] の実体を用意
-    for name in sorted(canonical_set):
-        if ensure_content(AGENTS_SKILLS, name, specs[name], "codex"):
-            managed.add(name)
+    # 2) 各 location に symlink を張る
+    for name in sorted(used):
+        spec = specs[name]
+        if "repo" in spec:
+            target = Path(os.path.normpath(checkout_dir(spec["repo"]) / spec["dir"]))
+            if not synced[spec["repo"]]:
+                failed.add(name)
+        else:
+            target = spec["path"]
+        if not (target / "SKILL.md").is_file():
+            warn(f"{name}: {target}/SKILL.md not found")
+            failed.add(name)
+            continue
+        for loc, root in LOCATIONS.items():
+            if name in desired[loc] and not place(root / name, target):
+                failed.add(name)
 
-    # 2) ~/.claude（個人 claude 可視）
-    for name in sorted(claude_set):
-        if name in codex_set:
-            ensure_symlink(CLAUDE_SKILLS, name, "claude")   # [all]: canonical へ symlink
-            managed.add(name)
-        elif ensure_content(CLAUDE_SKILLS, name, specs[name], "claude-code"):
-            managed.add(name)                    # [claude] 専用: 実体を直接
+    # 3) 宣言から外れた自分の symlink を外す（取得の成否ではなく宣言で判断する）
+    for loc, root in LOCATIONS.items():
+        for entry in sorted(root.iterdir()) if root.is_dir() else []:
+            if owned(entry) and entry.name not in desired[loc]:
+                entry.unlink()
+                info(f"unlink {entry}")
 
-    # 3) ~/.claude-work（会社 claude 可視）: [claude-work] を canonical 実体へ symlink
-    for name in sorted(claude_work_set):
-        ensure_symlink(CLAUDE_WORK_SKILLS, name, "claude-work")
-        managed.add(name)
-
-    # 4) prune: managed のうち各 location の desired から外れた物を撤去
-    if AGENTS_SKILLS.is_dir():
-        for entry in sorted(AGENTS_SKILLS.iterdir()):
-            n = entry.name
-            if n in managed and n not in canonical_set:
-                remove_entry(entry, n)
-    if CLAUDE_SKILLS.is_dir():
-        for entry in sorted(CLAUDE_SKILLS.iterdir()):
-            n = entry.name
-            if n in managed and n not in claude_set:
-                # ~/.claude 側は symlink(all の残骸) か実体(claude 専用の残骸)
-                remove_entry(entry, n)
-    if CLAUDE_WORK_SKILLS.is_dir():
-        for entry in sorted(CLAUDE_WORK_SKILLS.iterdir()):
-            n = entry.name
-            if n in managed and n not in claude_work_set:
-                remove_entry(entry, n)
-
-    managed = {n for n in (managed | all_desired) if
-               (AGENTS_SKILLS / n).exists() or (CLAUDE_SKILLS / n).exists()
-               or (CLAUDE_WORK_SKILLS / n).exists()
-               or (AGENTS_SKILLS / n).is_symlink() or (CLAUDE_SKILLS / n).is_symlink()
-               or (CLAUDE_WORK_SKILLS / n).is_symlink()}
-    save_json(STATE_FILE, {"managed": sorted(managed)})
+    if failed:
+        die(f"failed: {', '.join(sorted(failed))}")
     info("done")
 
 

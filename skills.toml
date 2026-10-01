@@ -1,21 +1,20 @@
 # エージェントに配布する skill の宣言。反映は lib/link-skills.py（setup.sh から）。
 #
-# [skills.<name>] 取得元:
-#   source = "owner/repo"   npx skills add の引数
-#   skill  = "<name>"       複数 skill repo から 1 つ選ぶ(任意, npx の -s)
-#   path   = "dir"          dotfiles 内の実体（自作 skill 用, source と排他）
-#                           commit する自作 skill の実体は shared/skills/<name>/ に置く
-#                           (cross-platform ゆえ shared 配下。shared/bin と対）
+# [skills.<name>] 取得元（どちらか一方）:
+#   source = "owner/repo[/dir]"  GitHub の repo（dir 省略 = repo 直下）。setup のたびに最新へ追従
+#   path   = "dir"               dotfiles 内の実体（自作 skill 用）
+#                                commit する自作 skill の実体は shared/skills/<name>/ に置く
+#                                (cross-platform ゆえ shared 配下。shared/bin と対）
 #
-# 配布先セクション（どのエージェントで使うか）:
-#   [all]    両方（Codex ~/.agents 実体 + Claude ~/.claude symlink）
-#   [codex]  codex だけ（~/.agents のみ）
-#   [claude] claude だけ（~/.claude のみ。~/.agents に置くと codex に漏れるため）
+# 配布先セクション（どのエージェントで使うか。各 location には symlink を張る）:
+#   [all]    両方（Codex ~/.agents/skills + 個人 Claude ~/.claude/skills）
+#   [codex]  codex だけ
+#   [claude] 個人 claude だけ
 #
-# machine-local / 未 commit の自作 skill は skills.local.toml(gitignore) に書く。
+# machine-local / 未 commit の自作 skill と会社 Claude 用の [claude-work] は skills.local.toml(gitignore) に書く。
 
 [skills.herdr]
-source = "ogulcancelik/herdr"
+source = "ogulcancelik/herdr/skills/herdr"
 
 # 自作: herdr の worktree/agent を束ねた並列ディスパッチ運用。
 #   /wt <やりたいこと>  … worktree+workspace を作りエージェントに task を渡す
@@ -27,27 +26,39 @@ path = "shared/skills/wt"
 path = "shared/skills/wtclean"
 
 [skills.codex-consultation]
-source = "shokai/agent-skills"
-skill = "codex-consultation"
+source = "shokai/agent-skills/plugins/codex-consultation/skills/codex-consultation"
 
 [skills.subagent-consultation]
-source = "shokai/agent-skills"
-skill = "subagent-consultation"
+source = "shokai/agent-skills/plugins/subagent-consultation/skills/subagent-consultation"
 
 [skills.conversation-context-export]
-source = "shokai/agent-skills"
-skill = "conversation-context-export"
+source = "shokai/agent-skills/plugins/conversation-context/skills/conversation-context-export"
 
 [skills.conversation-context-import]
-source = "shokai/agent-skills"
-skill = "conversation-context-import"
+source = "shokai/agent-skills/plugins/conversation-context/skills/conversation-context-import"
 
 [skills.unconventional-simplification]
-source = "shokai/agent-skills"
-skill = "unconventional-simplification"
+source = "shokai/agent-skills/plugins/unconventional-simplification/skills/unconventional-simplification"
+
+# AI 生成の不自然な日本語を読みやすく推敲する。repo 直下は開発用で、配布物は skills/yomiyasu。
+[skills.yomiyasu]
+source = "nanaism/yomiyasu/skills/yomiyasu"
+
+# 読み手 1 人向けの速習資料を、道具で検証した主張と図で書く。3 つ一緒に入れる
+# (explainer-book は隣の explainer/scripts/verify-doc.mjs を相対パスで呼ぶ。同じ checkout なので揃う)。
+# スクリプトの npm 依存は host に積まず、資料を置く repo 側に入れる。
+[skills.explainer]
+source = "mizchi/explainer/skills/explainer"
+
+[skills.explainer-book]
+source = "mizchi/explainer/skills/explainer-book"
+
+[skills.first-reader]
+source = "mizchi/explainer/skills/first-reader"
 
 # 両エージェントで使う: multiplexer 操作(herdr)、セッション間ハンドオフ
-# (conversation-context)、汎用のコード簡素化(unconventional-simplification)。
+# (conversation-context)、汎用のコード簡素化(unconventional-simplification)、
+# 日本語の推敲(yomiyasu)、人間向けの解説資料(explainer 系)。
 [all]
 skills = [
   "herdr",
@@ -56,6 +67,10 @@ skills = [
   "conversation-context-export",
   "conversation-context-import",
   "unconventional-simplification",
+  "yomiyasu",
+  "explainer",
+  "explainer-book",
+  "first-reader",
 ]
 
 # subagent-consultation は「Codex が別の Codex(subagent) に相談する」物なので
