@@ -1,0 +1,13 @@
+[Unit]
+Description=xremap
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Restart=always
+RestartSec=3
+# xremap-hypr-bin(AUR)。Hyprland の IPC でアクティブウィンドウを判定する
+ExecStart=/usr/bin/xremap --watch=device %h/.config/xremap/config.yml
+
+[Install]
+WantedBy=graphical-session.target

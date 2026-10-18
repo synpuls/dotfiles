@@ -1,0 +1,141 @@
+# Hyprland ではターミナルの class が org.wezfurlong.wezterm / com.mitchellh.ghostty になるため、application は正規表現で一致させる。
+# keypress_delay_ms: 20
+
+modmap:
+  # 日英切替キー(Henkan=日本語 / Muhenkan=英語)は単独で押して離した時だけ送る(Mac の英数・かなキーと同じ)。
+  # 修飾キーとして使った時(Cmd+C など)は切り替わらない。
+  - name: SandS
+    remap:
+      # 押している間は Shift、単独で押して離した時だけ Space(押しっぱなしで Space が連打されない)
+      Space:
+        held: Shift_L
+        alone: Space
+
+  # ノート PC の内蔵キーボード(ThinkPad / System76 Lemur Pro など。名前はどれも "AT Translated Set 2 keyboard")。
+  # 役割: 左 Alt = Cmd(単独で英語) / 右 Alt = Ctrl(ターミナル外では Emacs 風移動の Super) / 右 Ctrl = Alt(単独で日本語)。
+  # 例: 画面ロック Super+Ctrl+Q = 左 Alt + 右 Alt + Q。物理の左 Ctrl は変えない。
+  - name: Laptop(only terminal)
+    device:
+      only: "AT Translated Set 2 keyboard"
+    application:
+      only: /wezterm|ghostty/
+    remap:
+      CapsLock: Tab
+      ALT_L:
+        held: SUPER_L
+        alone: Muhenkan
+      ALT_R: Ctrl_R
+      SUPER_L: ALT_L
+      CTRL_R:
+        held: ALT_L
+        alone: Henkan
+
+  - name: Laptop
+    device:
+      only: "AT Translated Set 2 keyboard"
+    application:
+      not: /wezterm|ghostty/
+    remap:
+      CapsLock: Tab
+      ALT_L:
+        held: CTRL_R
+        alone: Muhenkan
+      ALT_R: SUPER_L
+      SUPER_L: ALT_L
+      CTRL_R:
+        held: ALT_L
+        alone: Henkan
+
+  - name: Kinesis(only wezterm)
+    device:
+      only: ["Kinesis Advantage2 Keyboard", "HID 05f3:0007"]
+    application:
+      only: /wezterm|ghostty/
+    remap:
+      ALT_R:
+        held: ALT_R
+        alone: Henkan
+      SUPER_L:
+        held: SUPER_L
+        alone: Muhenkan
+
+  - name: Kinesis
+    device:
+      only: ["Kinesis Advantage2 Keyboard", "HID 05f3:0007"]
+    application:
+      not: /wezterm|ghostty/
+    remap:
+      ALT_R:
+        held: ALT_R
+        alone: Henkan
+      SUPER_L:
+        held: CTRL_R
+        alone: Muhenkan
+      CTRL_L: SUPER_L
+
+keymap:
+  - name: Default
+    application:
+      not: /wezterm|ghostty/
+    remap:
+      # 移動
+      SUPER-a: Home
+      SUPER-e: End
+      SUPER-b: Left
+      SUPER-m: Left
+      SUPER-f: Right
+      SUPER-n: Down
+      SUPER-p: Up
+      SUPER-d: Delete
+      SUPER-j: Enter
+
+      # 選択
+      CONTROL_R-SHIFT-Left: SHIFT-Home
+      CONTROL_R-SHIFT-Right: SHIFT-End
+      SUPER-y: SHIFT-Left
+      SUPER-u: SHIFT-Home
+      SUPER-i: SHIFT-Right
+      SUPER-o: SHIFT-End
+
+      # 削除
+      SUPER-h: Backspace
+      SUPER-w: C-Backspace
+      SUPER-Backspace: C-Backspace
+      SUPER-Delete: C-Delete
+      ALT-Backspace: C-Backspace
+      CONTROL_R-Backspace: C-SHIFT-Backspace
+      ALT-Delete: C-Delete
+
+      # ページ移動
+      CTRL-Up: Home
+      CTRL-Down: End
+      CTRL-Left: Alt-Left
+      CTRL-Right: Alt-Right
+
+  - name: Wezterm
+    application:
+      only: /wezterm|ghostty/
+    remap:
+      CTRL-m: CTRL-b
+      Esc: [Esc, Muhenkan]
+
+  - name: Switch App
+    application:
+      not: /wezterm|ghostty/
+    remap:
+      CTRL-Tab: SUPER-Tab
+      SUPER-Tab: CTRL-Tab
+
+  - name: Switch WorkSpace
+    application:
+      only: /wezterm|ghostty/
+    remap:
+      CTRL-Right: SUPER-PageUp
+      CTRL-Left: SUPER-PageDown
+
+  - name: Switch WorkSpace2
+    application:
+      not: /wezterm|ghostty/
+    remap:
+      SUPER-Right: SUPER-PageUp
+      SUPER-Left: SUPER-PageDown

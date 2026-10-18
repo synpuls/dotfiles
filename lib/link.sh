@@ -48,6 +48,11 @@ link_path() {
       link_path "$child" "$target/$(basename "$child")"
     done
   else
+    # 既に同じ source を指していれば張り直さない。unlink→ln の一瞬に Hyprland 等が
+    # 設定を自動再読込すると「見つからない」エラーになるため
+    if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
+      return
+    fi
     if [ -L "$target" ]; then
       # 管理下(ROOT_DIR 配下)の symlink は張り替え、管理外 symlink は退避(dir 側と同じ扱い)
       target_link="$(readlink "$target")"
@@ -56,6 +61,13 @@ link_path() {
         *) backup_unmanaged "$target" ;;
       esac
     elif [ -e "$target" ]; then
+      case "$target" in
+        *.local)
+          # *.local の実ファイルは private companion(bootstrap)等が置いた正本なので触らない
+          echo "keep (実ファイルの .local を優先): $target" >&2
+          return
+          ;;
+      esac
       # dotfiles 管理外の実ファイル → 上書き前に退避
       backup_unmanaged "$target"
     fi

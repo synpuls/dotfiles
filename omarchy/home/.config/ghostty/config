@@ -1,0 +1,42 @@
+# 見た目は ghostty の初期設定のまま(背景色だけ変える)。ほかは挙動とキー設定だけを書く。
+# キー設定は wezterm(shared/home/.config/wezterm/wezterm.lua)から移したもの。
+
+# 背景だけ真っ黒にする(wezterm の colors.background = "black" と同じ)
+background = #000000
+
+# タブバーを細くする CSS(同じディレクトリの tabs.css)
+gtk-custom-css = tabs.css
+
+confirm-close-surface = false
+# SSH 先に ghostty の terminfo を渡す
+shell-integration-features = ssh-env
+mouse-scroll-multiplier = 0.95
+# Fix general slowness on hyprland (https://github.com/ghostty-org/ghostty/discussions/3224)
+async-backend = epoll
+
+keybind = shift+insert=paste_from_clipboard
+keybind = control+insert=copy_to_clipboard
+# Send Shift+Enter as CSI-u so TUIs can distinguish it from Enter.
+keybind = shift+enter=csi:13;2u
+# Legacy encoding sends Alt+Shift+Enter the same as Alt+Enter; send CSI-u so tmux can match M-S-Enter.
+keybind = alt+shift+enter=csi:13;4u
+
+# --- wezterm から移植 ---
+# ターミナル内は xremap が Cmd/Ctrl を入れ替えないので、wezterm の CMD = 物理 Cmd(Super)。
+# Cmd+C / Cmd+V = コピー / 貼り付け(wezterm の既定と同じ)
+keybind = super+c=copy_to_clipboard
+keybind = super+v=paste_from_clipboard
+# Ctrl+Tab / Ctrl+Shift+Tab = ghostty のタブ切替(herdr へは渡さない)
+keybind = ctrl+tab=next_tab
+keybind = ctrl+shift+tab=previous_tab
+# Cmd+S: nvim の <Esc><leader>w = Save
+keybind = super+s=text:\x1b w
+# herdr の操作は prefix(Ctrl+S = \x13)列を送る。ローカルでも herdr --remote でも効く
+# Cmd+Shift+T = ^X^T(zsh widget herdr-new-home-workspace。$HOME に空の workspace)
+keybind = super+shift+t=text:\x18\x14
+keybind = super+j=text:\x13j
+keybind = super+k=text:\x13k
+keybind = super+t=text:\x13t
+keybind = super+h=text:\x13h
+keybind = super+l=text:\x13l
+keybind = super+w=text:\x13w

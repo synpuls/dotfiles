@@ -1,0 +1,46 @@
+/* ghostty のタブバー(libadwaita の AdwTabBar)を細くする。見た目の他の部分は初期設定のまま。
+   文字は元の大きさのまま、余白と行の高さを詰めて文字 1 行ぶんの高さにする */
+tabbar .box,
+tabbar tabbox,
+tabbar tab {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+tabbar tab {
+  padding-left: 6px;
+  padding-right: 6px;
+  /* 文字 1 行ぶんより 8px だけ高く(上下 4px ずつ) */
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+tabbar tab label {
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+
+/* 閉じるボタン・タブ一覧ボタンが高さを押し上げないようにする */
+tabbar button {
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  -gtk-icon-size: 10px;
+}
+
+/* タブの × ボタンを出さない(GTK CSS は display:none が無いので、大きさ 0・透明にする)。閉じるのは Ctrl+Shift+W */
+tabbar tab .tab-close-button {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  -gtk-icon-size: 0;
+}

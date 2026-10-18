@@ -7,6 +7,11 @@ detect_machine() {
     echo "mac"
     return
   fi
+  # Omarchy(Arch + Hyprland)は os-release の ID で判定する
+  if [ -r /etc/os-release ] && (. /etc/os-release && [ "${ID:-}" = "omarchy" ]); then
+    echo "omarchy"
+    return
+  fi
   # Linux は「Ubuntu 24.04 / x86_64 / 非WSL」の時だけ server を自動判定する。
   # server プロファイルの前提(server/init.sh の preflight)と一致させ、変更適用より前の誤爆を防ぐ。
   # 22.04 / ARM / WSL / desktop 等は自動判定せず、明示指定(./init.sh <machine>)を促す。

@@ -1,0 +1,19 @@
+# Omarchy の言語ランタイムと CLI を mise で一元管理する（Mac と同じ版に揃える）。
+# 更新: version を書き換え → `mise install`（mise.lock も更新）→ commit。
+# プロジェクト別は .node-version/.ruby-version/.go-version（idiomatic）で解決。
+[tools]
+node = "22.22.3"
+ruby = "3.4.2"
+go = "1.25.6"
+# Omarchy が初期導入していた CLI
+claude = "latest"
+codex = "latest"
+gh = "latest"
+
+[settings]
+lockfile = true
+idiomatic_version_file_enable_tools = ["node", "ruby", "go"]
+idiomatic_version_file_disable_files = ["node:package.json", "ruby:Gemfile", "go:go.mod"]
+
+[settings.upgrade]
+auto_prune = false

@@ -1,6 +1,6 @@
 # dotfiles
 
-Mac / Ubuntu デスクトップ / Linux サーバーの設定を 1 つの規約で管理する。
+Mac / Ubuntu デスクトップ / Omarchy / Linux サーバーの設定を 1 つの規約で管理する。
 
 ## 構造
 
@@ -19,6 +19,7 @@ dotfiles/
 │   ├── home/          # マシン固有の $HOME ミラー(shared より優先)
 │   └── *.sh           # マシン規約のスクリプト + データ
 ├── ubuntu-desktop/
+├── omarchy/
 └── server/
 ```
 
@@ -74,6 +75,10 @@ ghq get https://github.com/synpuls/dotfiles
 cd ~/workspace/github.com/synpuls/dotfiles && ./init.sh
 ```
 
+omarchy(Arch + Hyprland)は `./init.sh` で自動判定される。`init.sh` が `omarchy update` → pacman/AUR のパッケージ・
+xremap 用の uinput・pkexec 認証の保持・default shell(zsh)を設定するので、**一度 logout/login してから `./setup.sh`**
+(詳細は下「omarchy プロファイル」節)。
+
 ubuntu-desktop は初回のみ `./init.sh ubuntu-desktop` で機種を明示し、mozc に `ubuntu-desktop/mozc.txt` を import して再起動。
 
 SSH 鍵を用意し(ed25519 + パスフレーズ、`<machine>/home/.ssh/` 配下に置き chmod 600)、公開鍵を GitHub に登録したら:
@@ -105,6 +110,25 @@ devcontainer を前提にした Linux server 用の構成。設計:
   `server/installers/mise.sh`(+ `lib/install-release.sh`)が導入する。devcontainer CLI は npm(mise の node)。
   host に go/rust ツールチェーンは不要。
 - **Docker は rootful + docker group**。docker group は実質 root 権限であることに留意。
+
+## omarchy プロファイル
+
+Omarchy は「ドライバ等が整った Arch」として使い、見た目と操作は持ち込まない構成。
+
+- **ショートカット**: `hypr/hyprland.lua` は `default.hypr.omarchy` を読まず、binding と looknfeel・テーマ色を除いた部品だけを読む
+  (Omarchy 更新で `default/hypr/omarchy.lua` に部品が増えたら追従すること)。`hypr/bindings.lua` に GNOME 寄りの最小限だけ張る
+  (Super+文字 は xremap の Emacs 風移動に使うため避ける)。ランチャーは Vicinae(Alt+F)。
+- **見た目**: Hyprland・ghostty・starship・GTK は各ツール素の初期設定(ダークモード、余白 0、アニメーション off、壁紙なし)。
+  壁紙は shell.json の `disabledPlugins` で Omarchy の background プラグインを止めている。`omarchy theme set` は GTK 等を上書きするので使わない。
+- **ワークスペース**: 1・2 の 2 つだけ。バー表示は自作の `omarchy/plugins/synpuls.workspaces`(`omarchy.workspaces` の clone)。
+- **キー**: xremap(`xremap-hypr-bin`、user service)。日英切替は単独押しのみ(右 Alt=日本語 / 左 Cmd=英語)。
+- **日本語入力**: fcitx5 + Hazkey(azooKey の変換エンジン)。`hazkey/config.json` で自動変換(ライブ変換)を常時、
+  入力中の予測ポップアップは無効(Space で候補一覧)。fcitx5 の profile/config は fcitx5 が書き戻すため link せず、未設定時だけ生成する。
+  ghostty だけ `GTK_IM_MODULE=fcitx`(systemd drop-in)で候補位置を合わせている。Claude Code の入力欄は Claude Code 側の制約で候補がずれる(Ctrl+G で $EDITOR に逃がす)。
+- **SSH / 機微設定**: `~/.ssh/config` はこの repo、鍵と `config.local` は bootstrap。bootstrap の前に 1Password アプリにサインインし、
+  設定 → 開発者 →「1Password CLI と連携」を有効にする。ssh-agent は openssh の user unit。
+  `lib/link.sh` は実ファイルの `*.local`(bootstrap が置く `~/.gitconfig.local` 等)を上書きしない。
+- **nvim**: 本体は Omarchy 同梱。`omarchy/editor.sh` が nvim-user-v6 を `~/workspace/synpuls/` に clone し、Omarchy の LazyVim を退避して link する。
 
 ## メモ
 
