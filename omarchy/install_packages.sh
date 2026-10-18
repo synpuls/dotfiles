@@ -98,6 +98,15 @@ if [ -f "$SHELL_JSON" ] && ! jq -e '(.disabledPlugins // []) | index("omarchy.ba
   mv "$tmp" "$SHELL_JSON"
 fi
 
+# バーの時計を秒まで出す自作版(plugins/synpuls.clock。1 秒ごとに更新)に差し替え、表示形式を秒付きにする
+if [ -f "$SHELL_JSON" ] && jq -e '.. | objects | select(.id? == "omarchy.clock")' "$SHELL_JSON" >/dev/null; then
+  tmp="$(mktemp)"
+  jq '(.. | objects | select(.id? == "omarchy.clock") | .format) = "dddd HH:mm:ss"
+    | (.. | objects | select(.id? == "omarchy.clock") | .id) = "synpuls.clock"
+    | (if .bar.centerAnchor == "omarchy.clock" then .bar.centerAnchor = "synpuls.clock" else . end)' "$SHELL_JSON" >"$tmp"
+  mv "$tmp" "$SHELL_JSON"
+fi
+
 # バーのワークスペース表示を 1・2 だけの自作版(plugins/synpuls.workspaces)に差し替える
 if [ -f "$SHELL_JSON" ] && jq -e '.. | objects | select(.id? == "omarchy.workspaces")' "$SHELL_JSON" >/dev/null; then
   tmp="$(mktemp)"
