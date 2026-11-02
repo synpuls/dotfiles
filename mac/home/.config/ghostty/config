@@ -9,10 +9,11 @@ theme = Zenbones Dark
 background = #000000
 cursor-color = #c6c8d1
 cursor-style-blink = false
-background-opacity = 0.95
+background-opacity = 1
 
 # Integrate the tab bar into the macOS titlebar and match the terminal background.
 macos-titlebar-style = tabs
+macos-icon = chalkboard
 
 # Herdr
 # Send Herdr's Ctrl+S prefix followed by the configured action key. This also
