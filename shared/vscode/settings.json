@@ -181,6 +181,5 @@
   "chat.viewSessions.orientation": "stacked",
   "claudeCode.preferredLocation": "panel",
   "remote.autoForwardPortsSource": "hybrid",
-  "gitlens.ai.model": "vscode",
-  "gitlens.ai.vscode.model": "copilotcli:claude-haiku-4.5",
+  "editor.accessibilitySupport": "off",
 }
