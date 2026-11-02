@@ -6,10 +6,10 @@ gui:
   theme:
     selectedLineBgColor:
       - reverse
-  # splitDiff: always
-  authorColors:
-    'synpuls': 'red'
-    '*': 'blue'
+    # splitDiff: always
+    authorColors:
+      'synpuls': 'red'
+      '*': 'blue'
   mouseEvents: false
   commitLength:
     show: false
