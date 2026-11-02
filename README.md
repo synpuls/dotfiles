@@ -101,6 +101,30 @@ legacy --version
 server は `./init.sh` の後、**docker group と default shell(zsh)を反映するため一度 logout/login**
 してから `./setup.sh` を実行する。
 
+## Mac の Tailscale
+
+公式 Standalone 版を `mac/home/.Brewfile` の `tailscale-app` cask で管理する。
+新規セットアップでは `./setup.sh` がインストールする。`greedy: true` により、
+アプリに自動更新機能があっても `brew bundle --global` 実行時の更新確認に含める。
+
+手動インストール済みの Mac では、最初に同じ公式 `.pkg` を Homebrew 経由で
+インストールして管理下に入れる。インストーラーが求める管理者認証を行う。
+
+```sh
+brew install --cask tailscale-app
+```
+
+以後、Tailscale だけを更新する場合:
+
+```sh
+brew update
+brew upgrade --cask --greedy tailscale-app
+tailscale version
+```
+
+バージョンは固定せず、Homebrew が配布する安定版を使う。日常の自動更新は
+Tailscale アプリの設定で有効にする。tailnet へのログイン・ACL・認証情報は管理画面で扱う。
+
 ## server プロファイル
 
 devcontainer を前提にした Linux server 用の構成。設計:

@@ -66,5 +66,7 @@ cask "kap"
 cask "karabiner-elements"
 cask "kindle"
 cask "slack"
+# 公式 Standalone 版。アプリ内の自動更新に加え、bundle 実行時も更新を確認する。
+cask "tailscale-app", greedy: true
 cask "visual-studio-code"
 cask "wezterm"
