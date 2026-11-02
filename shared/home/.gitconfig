@@ -39,3 +39,9 @@ line-numbers-plus-style = "#00A0A0"
 # マシンローカル設定は <machine>/home/.gitconfig.local に(git 管理外)
 [include]
 	path = ~/.gitconfig.local
+[credential "https://github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential
