@@ -137,7 +137,7 @@ devcontainer を前提にした Linux server 用の構成。設計:
   そのため `SYNPULS_NVIM_PROFILE=host` を export する(設定側でこの値を見て Mason 自動導入等を抑止する想定)。
 - ツール(node/neovim/herdr/lazygit/lazydocker/delta/ghq/starship)は **mise** が管理する。
   version は `server/home/.config/mise/config.toml` に固定し、`mise.lock` が backend/hash を pin する
-  (更新は version を書き換え → `mise install` → commit)。mise 本体だけ `server/tools.env` に pin+sha し
+  (更新は `mise outdated --bump` → `mise upgrade --interactive --bump` → 差分を commit)。mise 本体だけ `server/tools.env` に pin+sha し
   `server/installers/mise.sh`(+ `lib/install-release.sh`)が導入する。devcontainer CLI は npm(mise の node)。
   host に go/rust ツールチェーンは不要。
 - **Docker は rootful + docker group**。docker group は実質 root 権限であることに留意。

@@ -1,14 +1,23 @@
-# Mac（日常ドライバ）の言語ランタイムを mise で一元管理する。server 用とは別系統。
-# 更新: version を書き換え → `mise install`（mise.lock も更新）→ commit。
-# global は 3 版だけ pin。プロジェクト別は .node-version/.ruby-version/.go-version（idiomatic）で解決。
+# Mac（日常ドライバ）の言語ランタイムとユーザー CLI を mise で一元管理する。server 用とは別系統。
+# 更新: `mise outdated --bump` → `mise upgrade --interactive --bump` → 差分を確認して commit。
+# global はここだけを正本として pin。プロジェクト別は .node-version/.ruby-version/.go-version（idiomatic）で解決。
 # 追加版は `mise install node@X`（インストールのみ）/永続は各 dir で `mise use node@X`。
 [tools]
-node = "22.22.3"
-ruby = "3.4.2"
-go = "1.25.6"
+node = "26.13.0"
+ruby = "4.0.9"
+go = "1.27.3"
+# Node の更新から独立させるため、従来の npm global CLI も mise tool として管理する。
+# claude/codex/pnpm は registry の公式バイナリ、残りは npm backend。
+claude = "2.1.316"
+codex = "0.166.0"
+pnpm = "12.16.1"
+"npm:appium" = "3.9.0"
+"npm:ccusage" = "20.0.46"
+"npm:corepack" = "0.36.0"
 
 [settings]
-# version+hash を mise.lock に固定して再現可能に（server と同方針）。
+# version/backend と、対応 backend が提供する URL/hash を mise.lock に固定する。
+# npm backend は依存の hash までは固定しないため、config の package version が再現性の境界。
 lockfile = true
 # .node-version / .ruby-version / .go-version を尊重（anyenv 時代の per-project 版を継承）。
 idiomatic_version_file_enable_tools = ["node", "ruby", "go"]
