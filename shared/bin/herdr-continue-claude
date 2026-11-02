@@ -29,6 +29,16 @@ die() {
   exit 1
 }
 
+# date(1) は GNU(Linux) と BSD(macOS) で引数が違うので吸収する。
+# それぞれ GNU 形式 -> BSD 形式の順で試し、両方失敗したら非 0 で返す。
+to_epoch() { # "YYYY-MM-DD HH:MM" -> epoch
+  date -d "$1" +%s 2>/dev/null || date -j -f '%Y-%m-%d %H:%M' "$1" +%s 2>/dev/null
+}
+
+format_epoch() { # epoch -> "YYYY-MM-DD HH:MM TZ"
+  date -d "@$1" '+%F %H:%M %Z' 2>/dev/null || date -r "$1" '+%F %H:%M %Z' 2>/dev/null
+}
+
 interval_minutes=''
 until_text=''
 message='続けて'
@@ -80,7 +90,7 @@ case "$until_text" in
     ;;
 esac
 
-until_epoch=$(date --date "$until_input" +%s 2>/dev/null) || die "invalid stop time: $until_text"
+until_epoch=$(to_epoch "$until_input") || die "invalid stop time: $until_text"
 now_epoch=$(date +%s)
 (( until_epoch > now_epoch )) || die "stop time is not in the future: $until_text"
 interval_seconds=$(( interval_minutes * 60 ))
@@ -105,7 +115,7 @@ mapfile -t targets < <(
 target=${targets[0]}
 
 printf 'Sending %q every %s minute(s) to Claude in %s until %s.\n' \
-  "$message" "$interval_minutes" "$target" "$(date --date "@$until_epoch" '+%F %H:%M %Z')"
+  "$message" "$interval_minutes" "$target" "$(format_epoch "$until_epoch")"
 
 while :; do
   now_epoch=$(date +%s)
