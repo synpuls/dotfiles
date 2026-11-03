@@ -199,17 +199,22 @@ ir_verify_sha256 "$2" "$3"
     def test_wrapper_preserves_streams_arguments_cwd_and_exit(self):
         self.command('fake-legacy', '''#!/bin/bash
 [[ "$1" = import && "$2" = './資料 dump.json' ]] || exit 99
-[[ "$PWD" = "$EXPECTED_CWD" ]] || exit 98
+# macOS の /var -> /private/var など、表記が異なっても同じディレクトリなら保持されている。
+[[ . -ef "$EXPECTED_CWD" ]] || exit 98
 cat
 printf 'diagnostic\n' >&2
 exit 23
 ''')
         self.env.update(LEGACY_CLI_BINARY=str(self.bin / 'fake-legacy'), EXPECTED_CWD=str(self.base))
-        result = subprocess.run([str(ROOT / 'shared/bin/legacy'), 'import', './資料 dump.json'],
-                                env=self.env, cwd=self.base, input='jsonrpc\n', text=True,
-                                capture_output=True, timeout=15)
-        self.assertEqual((result.returncode, result.stdout, result.stderr),
-                         (23, 'jsonrpc\n', 'diagnostic\n'))
+        alias = self.base / 'cwd-alias'
+        alias.symlink_to(self.base, target_is_directory=True)
+        for cwd in [self.base, alias]:
+            with self.subTest(cwd=str(cwd)):
+                result = subprocess.run([str(ROOT / 'shared/bin/legacy'), 'import', './資料 dump.json'],
+                                        env=self.env, cwd=cwd, input='jsonrpc\n', text=True,
+                                        capture_output=True, timeout=15)
+                self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                 (23, 'jsonrpc\n', 'diagnostic\n'))
 
 
 if __name__ == '__main__':
