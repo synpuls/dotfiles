@@ -10,6 +10,7 @@ mkdir -p "$BIN_DIR"
 # dotfiles が公開する内蔵 bin(このリポジトリ内)。
 BINS=(
   "dcx=${ROOT}/shared/bin/dcx"
+  "legacy=${ROOT}/shared/bin/legacy"
   "herdr-continue-claude=${ROOT}/shared/bin/herdr-continue-claude"
 )
 

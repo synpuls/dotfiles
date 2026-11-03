@@ -18,6 +18,10 @@ for step in install_packages languages editor; do
   "$ROOT_DIR/$MACHINE/$step.sh"
 done
 
+# 全マシン共通の CLI 本体を、版と SHA-256 を固定して導入
+legacy_status=0
+"$ROOT_DIR/shared/installers/legacy.sh" || legacy_status=$?
+
 # 別リポジトリ管理の実行可能ファイルを ~/.local/bin へ link
 "$ROOT_DIR/lib/link-bin.sh"
 
@@ -28,6 +32,11 @@ if command -v python3 >/dev/null; then
   python3 "$ROOT_DIR/lib/link-mcp.py"
 else
   echo "python3 が無いため skill/MCP 配線をスキップ"
+fi
+
+if [ "$legacy_status" -ne 0 ]; then
+  echo "Legacy CLI は未導入または更新未完了です。他の設定処理は実行しました。shared/legacy.md を確認してください。" >&2
+  exit "$legacy_status"
 fi
 
 echo "お疲れ様でした。"

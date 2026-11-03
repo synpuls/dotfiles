@@ -1,0 +1,19 @@
+name: Legacy CLI installer
+on:
+  push:
+    paths: ['shared/bin/legacy', 'shared/installers/legacy.sh', 'shared/legacy-release.env', 'lib/install-release.sh', 'lib/link-bin.sh', 'setup.sh', 'tests/test_legacy_install.py', '.github/workflows/legacy-cli.yml']
+  pull_request:
+    paths: ['shared/bin/legacy', 'shared/installers/legacy.sh', 'shared/legacy-release.env', 'lib/install-release.sh', 'lib/link-bin.sh', 'setup.sh', 'tests/test_legacy_install.py', '.github/workflows/legacy-cli.yml']
+permissions:
+  contents: read
+jobs:
+  installer:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash -n shared/bin/legacy shared/installers/legacy.sh lib/install-release.sh lib/link-bin.sh setup.sh
+      - run: python3 -m unittest discover -s tests -p 'test_legacy_install.py' -v
