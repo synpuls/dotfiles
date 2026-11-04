@@ -78,7 +78,7 @@ binary.chmod(0o755)
         self.assertEqual(args[args.index('--git') + 1], 'file:///reviewed-source')
         self.assertEqual(build['git_cli'], 'true')
         self.assertNotEqual(Path(build['cwd']), self.base)
-        self.assertTrue(Path(build['target']).is_relative_to(self.prefix))
+        self.assertTrue(Path(build['target']).resolve().is_relative_to(self.prefix.resolve()))
         self.assertEqual(subprocess.check_output([binary], text=True), 'legacy 0.1.0\n')
 
     def test_same_revision_needs_no_fetch_or_build(self):
