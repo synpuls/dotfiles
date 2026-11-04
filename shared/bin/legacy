@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# setup.sh で導入した standalone CLI を起動する。起動時の取得・ビルドは行わない。
+# SSH 設定後に導入した CLI を起動する。起動時の取得・ビルドは行わない。
 # 開発用バイナリだけ LEGACY_CLI_BINARY=/absolute/path/to/legacy で上書きできる。
 # 接続先: LEGACY_API_URL または --api-url。認証: LEGACY_API_TOKEN。
 set -euo pipefail
 
 binary=${LEGACY_CLI_BINARY:-"$HOME/.local/opt/legacy/bin/legacy"}
 if [[ ! -f "$binary" || ! -x "$binary" ]]; then
-  printf 'legacy: CLI が未導入です。dotfiles/setup.sh または shared/installers/legacy.sh を実行してください。\n' >&2
+  printf 'legacy: CLI が未導入です。bootstrap で SSH を設定後、dotfiles の shared/installers/legacy.sh を実行してください。\n' >&2
   exit 127
 fi
 exec "$binary" "$@"

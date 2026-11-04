@@ -128,34 +128,32 @@ binary.chmod(0o755)
                 self.env.update(TEST_OS=system, TEST_ARCH=arch)
                 self.assertEqual(self.success().parent.name, f'{system}-{arch}')
 
-    def test_setup_runs_other_settings_and_reports_build_status(self):
+    def test_basic_setup_does_not_require_private_source_or_build(self):
         root = self.base / 'setup'
         for directory in ['lib', 'shared/installers', 'server']:
             (root / directory).mkdir(parents=True)
         shutil.copy2(ROOT / 'setup.sh', root / 'setup.sh')
         (root / 'lib/common.sh').write_text('resolve_machine() { echo server; }\n')
         installer = root / 'shared/installers/legacy.sh'
-        installer.write_text('#!/bin/bash\nexport PATH="$TEST_COMMAND_DIR:$PATH"\nexec bash "$TEST_INSTALLER" --prefix "$TEST_PREFIX" --source file:///reviewed-source\n')
+        installer.write_text('#!/bin/bash\nprintf "unexpected CLI install" >> "$SETUP_LOG"\nexit 97\n')
         installer.chmod(0o755)
         log = self.base / 'setup-steps'
-        self.env.update(FAIL_BUILD='1', TEST_INSTALLER=str(self.root / 'shared/installers/legacy.sh'),
-                        TEST_PREFIX=str(self.prefix), TEST_COMMAND_DIR=str(self.bin), SETUP_LOG=str(log))
+        self.env['SETUP_LOG'] = str(log)
         for name in ['server/install_packages.sh', 'server/languages.sh', 'server/editor.sh', 'lib/link-bin.sh']:
             stub = root / name
             stub.write_text('#!/bin/bash\nprintf "%s\\n" "$0" >> "$SETUP_LOG"\n')
             stub.chmod(0o755)
         for name in ['link-skills.py', 'link-mcp.py']:
             (root / 'lib' / name).write_text('import os\nwith open(os.environ["SETUP_LOG"], "a") as log: log.write(__file__ + "\\n")\n')
-        for fail in ['1', '0']:
-            with self.subTest(build_failure=fail):
-                self.env['FAIL_BUILD'] = fail
-                log.write_text('')
-                result = subprocess.run(['bash', str(root / 'setup.sh')], env=self.env,
-                                        text=True, capture_output=True, timeout=15)
-                self.assertEqual(result.returncode == 0, fail == '0', result.stderr)
-                for name in ['install_packages.sh', 'languages.sh', 'editor.sh', 'link-bin.sh', 'link-skills.py', 'link-mcp.py']:
-                    self.assertIn(name, log.read_text())
-                self.assertEqual('お疲れ様でした' in result.stdout, fail == '0')
+        result = subprocess.run(['bash', str(root / 'setup.sh')], env=self.env,
+                                text=True, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for name in ['install_packages.sh', 'languages.sh', 'editor.sh', 'link-bin.sh', 'link-skills.py', 'link-mcp.py']:
+            self.assertIn(name, log.read_text())
+        self.assertNotIn('unexpected CLI install', log.read_text())
+        self.assertFalse(self.log.exists())
+        self.assertFalse(self.prefix.exists())
+        self.assertIn('SSH 設定後', result.stdout)
 
     def test_wrapper_preserves_streams_arguments_cwd_and_exit(self):
         self.command('fake-legacy', '''#!/bin/bash

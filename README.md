@@ -62,7 +62,7 @@ dotfiles/
 - 機微な `.gitconfig.local` / `.ssh` 系は **bootstrap が正**(`install.sh` が既存を退避して `$HOME` へ上書き配置)。
 - 前提: 1Password CLI(`op`)にサインイン済みであること(私鍵取得時に承認が入る)。
 
-→ 新マシンはこの 2 repo を順に流す: **① dotfiles(`init.sh` → `setup.sh`)→ ② `synpuls/bootstrap`(`install.sh`)**。
+→ 新マシンは **① dotfiles(`init.sh` → `setup.sh`) → ② `synpuls/bootstrap`(`install.sh`) → ③ dotfilesの`shared/installers/legacy.sh`** の順に実行する。CLIのソース取得はSSH設定後に行う。
 
 ## セットアップ
 
@@ -81,15 +81,22 @@ xremap 用の uinput・pkexec 認証の保持・default shell(zsh)を設定す�
 
 ubuntu-desktop は初回のみ `./init.sh ubuntu-desktop` で機種を明示し、mozc に `ubuntu-desktop/mozc.txt` を import して再起動。
 
-SSH 鍵を用意し(ed25519 + パスフレーズ、`<machine>/home/.ssh/` 配下に置き chmod 600)、公開鍵を GitHub に登録したら:
+基本セットアップを実行する。この段階では Legacy の private ソースを取得しない。
 
 ```sh
-ssh -T git@github.com   # Hi <user>! を確認
 ./setup.sh
 ```
 
-機微設定(実 SSH 鍵・git 名義・sops)は続けて private companion を流す:
-`synpuls/bootstrap` を clone → `./install.sh`(詳細は上「機微設定」節)。
+続いて `synpuls/bootstrap` の `install.sh` で SSH 設定・鍵を配置する
+(取得方法・前提は bootstrap の手順に従う。詳細は上「機微設定」節)。
+その後、dotfiles のディレクトリに戻って CLI を導入する。
+
+```sh
+./shared/installers/legacy.sh
+legacy --version
+```
+
+固定ソースの取得条件と現在の検証範囲は [Legacy CLI の導入](shared/legacy.md) を参照する。
 
 server は `./init.sh` の後、**docker group と default shell(zsh)を反映するため一度 logout/login**
 してから `./setup.sh` を実行する。

@@ -1,5 +1,5 @@
 #!/bin/bash
-# 本セットアップ(ssh 設定後)
+# 基本セットアップ。private CLI の導入は SSH 設定後に別途行う。
 set -eu
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -18,10 +18,6 @@ for step in install_packages languages editor; do
   "$ROOT_DIR/$MACHINE/$step.sh"
 done
 
-# 全マシン共通の CLI を、固定したソースからビルドして導入
-legacy_status=0
-"$ROOT_DIR/shared/installers/legacy.sh" || legacy_status=$?
-
 # 別リポジトリ管理の実行可能ファイルを ~/.local/bin へ link
 "$ROOT_DIR/lib/link-bin.sh"
 
@@ -34,9 +30,4 @@ else
   echo "python3 が無いため skill/MCP 配線をスキップ"
 fi
 
-if [ "$legacy_status" -ne 0 ]; then
-  echo "Legacy CLI は未導入または更新未完了です。他の設定処理は実行しました。shared/legacy.md を確認してください。" >&2
-  exit "$legacy_status"
-fi
-
-echo "お疲れ様でした。"
+echo "基本セットアップが完了しました。Legacy CLI は bootstrap の SSH 設定後に ./shared/installers/legacy.sh で導入できます。"

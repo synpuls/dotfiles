@@ -1,7 +1,7 @@
 # Legacy CLI をソースから導入する
 
-`setup.sh` は `shared/installers/legacy.sh` で CLI 本体をビルドし、
-`lib/link-bin.sh` で `~/.local/bin/legacy` を配置する。
+`setup.sh` は基本設定と `~/.local/bin/legacy` の起動用リンクを配置する。
+SSH 設定後に `shared/installers/legacy.sh` を実行して CLI 本体をビルドする。
 CLI の起動時には取得・ビルドしない。GitHub Actions・Releases・`gh` 認証は使わない。
 
 ## 前提と固定値
@@ -16,25 +16,27 @@ Rust 導入と Command Line Tools を使う。Linux は Rust とビルドツー�
 対象リポジトリを読めることが前提で、GitHub API の token は不要。
 
 固定コミットは `6927624d87a9a4686de4cab680310bebc2b8d11e`。
-このコミットはリモート main へ未反映で、今回は push していない。
-新しい Mac で利用する前に、ソースを正式な参照から取得可能にする作業が別途必要。
-削除済みブランチのコミットが GitHub 内部に保持されていることには依存しない。
+このコミットを含むソースは private リポジトリの main で管理する。
+新しい Mac は SSH 認証を準備したうえで、インストーラーから固定コミットを取得する。
 
-## 新規 Mac の導入順序（対応が残る点）
+## 初回の導入順序
 
-基本セットアップで Git・Rust・1Password CLI 等を用意し、次に `synpuls/bootstrap` で
-SSH 設定・鍵を配置し、その後に CLI インストーラーを実行する必要がある。
-現在は基本の `setup.sh` からも CLI を呼んでおり、鍵が未配置だと取得に失敗する。
-この呼び出しを切り離す変更は未実施。以下は SSH 認証が準備済みの場合の手順。
-
-## 導入・更新
-
-通常は `./setup.sh`。CLI だけなら次を実行する。
+1. dotfiles の `init.sh` → `setup.sh` で Git・Rust・1Password CLI 等と起動用リンクを用意する。
+2. `synpuls/bootstrap` の `install.sh` で SSH 設定・鍵を配置する。
+3. dotfiles のディレクトリに戻り、CLI を導入する。
 
 ```sh
 ./shared/installers/legacy.sh
-./lib/link-bin.sh
+legacy --version
 ```
+
+基本の `setup.sh` は CLI のソース取得・ビルドを行わない。
+SSH 設定後でも、ビルド対象の固定コミットを取得できることが必要。
+
+## 更新
+
+固定値を変更して `./shared/installers/legacy.sh` を再実行する。
+通常の更新で基本セットアップや bootstrap をやり直す必要はない。
 
 インストーラーは Cargo に固定 commit と `--locked` を渡す。
 既存 checkout を書き換えず、一時領域で CLI パッケージだけをビルドする。
@@ -43,7 +45,7 @@ Souther コンパイラーや Postgres、Node.js はこのビルドには不要�
 commit・Rust 版・OS/CPU が同じで、導入済みバイナリの版を確認できれば再ビルドしない。
 更新は固定値を変更して再実行する。ビルドと起動確認に成功した後だけ
 `~/.local/opt/legacy/bin/legacy` のリンクを切り替え、失敗時は以前の版を残す。
-CLI 導入に失敗しても、`setup.sh` は他の設定処理を続け、最後に非ゼロで終了する。
+取得・ビルドに失敗した場合は、CLI インストーラーが非ゼロで終了する。
 
 ローカルの Git リポジトリでも、同じ commit の取得・ビルド経路を検証できる。
 手編集した未コミットファイルや、既存のビルド済みバイナリは使わない。
@@ -71,7 +73,7 @@ legacy mcp
 
 Linux x86_64 で、空の導入先から固定コミットを取得し、本物の CLI をビルド・配置した。
 再実行で取得もビルドも行わないこと、MCP 初期化・ツール一覧、ローカル API への読取接続を確認した。
-テストでは版更新・ビルド失敗時の保持・セットアップの成功と失敗・ラッパーの引数と入出力を確認する。
+テストでは版更新・ビルド失敗時の保持・基本セットアップがCLI導入を呼ばないこと・ラッパーの引数と入出力を確認する。
 
 ```sh
 python3 -m unittest discover -s tests -p 'test_legacy_install.py' -v
