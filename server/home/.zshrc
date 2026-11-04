@@ -64,6 +64,19 @@ function _osc52_copy() {
     printf '\033]52;c;%s\a' "$b64"
 }
 
+# c <file...> / <cmd> | c … ファイル(複数なら連結)か標準入力を Mac のクリップボードへ送る。
+function c() {
+  if (( $# == 0 )) && [[ -t 0 ]]; then
+    echo "usage: c <file...>  または  <cmd> | c" >&2
+    return 2
+  fi
+  local data
+  # $(...) は末尾の改行を落とすので、番兵 x を足してから外す
+  data=$(cat -- "$@" && printf x) || return 1
+  data=${data%x}
+  printf '%s' "$data" | _osc52_copy
+}
+
 # terraform plan -generate-config-out= は書き込み先にパスを要求し、既存ファイルには書かない。
 # 作業ディレクトリに tmp.tf を残さないよう mktemp -d の中に生成させ、中身をクリップボードへ
 # 送ってから tmp ごと捨てる。引数は terraform へ透過する(-target 等)。
