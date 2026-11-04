@@ -21,3 +21,17 @@ gpt-6-astra = 4
 
 [notice]
 hide_rate_limit_model_nudge = true
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["chrome-devtools-mcp@latest"]
+
+[mcp_servers.legacy]
+command = "/bin/sh"
+args = ["-c", 'exec "$HOME/.local/bin/legacy" mcp']
+
+[mcp_servers.legacy.env]
+LEGACY_API_URL = "https://legacy.home.synpuls.digital"
+
+[projects."/home/synpuls/workspace/github.com/synpuls/legacy"]
+trust_level = "trusted"

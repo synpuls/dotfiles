@@ -69,6 +69,27 @@ legacy mcp
 認証が必要なら `LEGACY_API_TOKEN` を環境変数で渡す。
 開発中に別のバイナリを起動する場合だけ `LEGACY_CLI_BINARY` で上書きできる。
 
+## Codex から MCP を使う
+
+CLI 導入後、dotfiles のディレクトリで登録を反映する（Python 3.11 以上）。
+
+```sh
+python3 lib/link-mcp.py
+codex mcp get legacy
+```
+
+Codex を再起動すると Legacy の MCP ツールを利用できる。
+`mcp.toml` の `[codex]` に登録しており、接続先は
+`https://legacy.home.synpuls.digital`。
+Codex が `~/.local/bin/legacy mcp` を起動し、stdio で通信する。
+Legacy が HTTPS で本番 API に接続するため、手動で MCP プロセスを起動する必要はない。
+Mac と Linux のホームディレクトリの違いは、起動時に `$HOME` を展開して扱う。
+
+初回は「Legacy の MCP でページを検索して。変更はしないで」と依頼して確認できる。
+既に同名の MCP を手動登録している場合、`link-mcp.py` は上書きしない。
+`codex mcp get legacy` で設定を確認し、置き換える場合は
+`codex mcp remove legacy` の後に登録を反映する。
+
 ## 確認済みの範囲
 
 Linux x86_64 で、空の導入先から固定コミットを取得し、本物の CLI をビルド・配置した。

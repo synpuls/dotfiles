@@ -16,11 +16,17 @@
 command = "npx"
 args = ["chrome-devtools-mcp@latest"]
 
+# 起動時に HOME を展開し、Mac/Linux 共通の導入先を使う。
+[servers.legacy]
+command = "/bin/sh"
+args = ["-c", 'exec "$HOME/.local/bin/legacy" mcp']
+env = { LEGACY_API_URL = "https://legacy.home.synpuls.digital" }
+
 [all]
 servers = []
 
 [codex]
-servers = ["chrome-devtools"]
+servers = ["chrome-devtools", "legacy"]
 
 [claude]
 servers = []
