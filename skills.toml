@@ -19,11 +19,15 @@ source = "ogulcancelik/herdr/skills/herdr"
 # 自作: herdr の worktree/agent を束ねた並列ディスパッチ運用。
 #   /wt <やりたいこと>  … worktree+workspace を作りエージェントに task を渡す
 #   /wtclean [--yes]    … merged 済みの worktree を安全に回収
+#   /wtstatus           … worktree ごとの進捗を表で見る（読むだけ）
 [skills.wt]
 path = "shared/skills/wt"
 
 [skills.wtclean]
 path = "shared/skills/wtclean"
+
+[skills.wtstatus]
+path = "shared/skills/wtstatus"
 
 [skills.codex-consultation]
 source = "shokai/agent-skills/plugins/codex-consultation/skills/codex-consultation"
@@ -64,6 +68,7 @@ skills = [
   "herdr",
   "wt",
   "wtclean",
+  "wtstatus",
   "conversation-context-export",
   "conversation-context-import",
   "unconventional-simplification",
