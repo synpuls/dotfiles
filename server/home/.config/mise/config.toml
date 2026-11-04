@@ -5,28 +5,37 @@
 # 言語 toolchain は repo の devcontainer が持ち、host には積まず dcx で container 実行する。
 
 [tools]
-node = "26.10.0"
-pnpm = "12.8.1"
-go = "1.27.1" # 個人 host 開発用(プロジェクトの言語は devcontainer 側)
-neovim = "0.12.5"
-lazygit = "0.65.1"
+node = "26.13.0"
+pnpm = "12.16.1"
+go = "1.27.3" # 個人 host 開発用(プロジェクトの言語は devcontainer 側)
+# 個人 host 開発用。mise が RUSTUP_TOOLCHAIN を設定するため、repo の rust-toolchain.toml より優先される。
+rust = "1.99.1"
+# Souther を個人 host で使うための JDK 25 と CLI。project の toolchain は devcontainer 側。
+java = "temurin-25.0.5+8.0.LTS"
+# Unix 向け launcher + uber jar。Windows zip / LSP jar を選ばないよう asset を指定する。
+"github:souther-lang/souther" = { version = "0.4.1", asset_pattern = "souther" }
+neovim = "0.12.6"
+lazygit = "0.66.2"
 lazydocker = "0.25.2"
-delta = "0.19.2"
-ghq = "1.11.0"
+delta = "0.20.1"
+ghq = "1.11.2"
 # apt の 0.5.10 は herdr --remote 越しで TUI 描画が壊れる(生エスケープ列が表示)。mise で 0.5.11 以上を使う(0.6.0 で崩れないことを確認済み)。
 peco = "0.6.0"
-starship = "1.26.0"
-herdr = "0.9.1"
-codex = "0.159.0" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
-github-cli = "2.101.0" # GitHub CLI（実行ファイル: gh）
-awscli = { version = "2.37.6", symlink_bins = true } # AWS CLI v2(aqua で公式配布物)。llm-platform の AWS 構築用
+starship = "1.27.0"
+herdr = "0.9.5"
+codex = "0.163.0" # AI コーディングエージェント(個人用・aqua で公式バイナリ)
+github-cli = "2.103.3" # GitHub CLI（実行ファイル: gh）
+awscli = { version = "2.39.3", symlink_bins = "true" } # AWS CLI v2(aqua で公式配布物)。AWS 環境の構築・管理用
 ecspresso = "2.8.7" # Amazon ECS デプロイツール
+# Google Cloud CLI(registry 既定の vfox plugin。linux x86_64 の配布物は Python 同梱で host に python を足さない)。
+# Google Cloud の認証情報(ADC)の管理に使う。追加 component は入れない。
+gcloud = "591.0.0"
 # terraform は repo 側の mise.toml / .terraform-version が勝つ。ここは host の既定版。
-terraform = "1.16.4"
-tflint = "0.64.0" # terraform の lint
+terraform = "1.17.1"
+tflint = "0.65.0" # terraform の lint
 # terraform-tui(PyPI: tftui)。GitHub はソース配布のみ = aqua/ubi 不可のため pipx backend。
 # uv はその実行基盤(単体バイナリ。host に system python を足さない。mac も brew で uv 済)。
-uv = "0.12.20"
+uv = "0.13.6"
 "pipx:tftui" = "0.14.1"
 # Civet の language server(バイナリ名は civet-lsp)。nvim の LSP 用。
 # registry に短縮名が無いので npm backend を明示する。
@@ -35,13 +44,12 @@ uv = "0.12.20"
 "npm:@danielx/civet-language-server" = "0.3.42"
 # pre-commit の秘密検査に使う。8.30.1 で protect --staged が github-pat を検出することを実測確認済み
 gitleaks = "8.30.1"
+aws-vault = "7.17.5"
 
 [settings]
 # version+hash を mise.lock に固定して再現可能にする。
 lockfile = true
-# tenv/tfenv 互換の .terraform-version を読む(mise の既定は無効なので tool 単位で opt-in)。
-# 未導入版が書かれていれば auto_install が checksum 検証つきで導入する。
-idiomatic_version_file_enable_tools = ["terraform"]
+idiomatic_version_file_enable_tools = ["terraform", "ruby"]
 # npm backend は実 npm に委ねる。mise 2026.8.3 内蔵の npm クライアント(aube)は非対話環境で
 # 必ず `user aborted` を返して失敗する(隔離した clean 環境の一括 mise install で再現)。
 # これが無いと server/install_packages.sh の mise install が新マシンで落ちる。

@@ -139,7 +139,7 @@ devcontainer を前提にした Linux server 用の構成。設計:
   version は `server/home/.config/mise/config.toml` に固定し、`mise.lock` が backend/hash を pin する
   (更新は `mise outdated --bump` → `mise upgrade --interactive --bump` → 差分を commit)。mise 本体だけ `server/tools.env` に pin+sha し
   `server/installers/mise.sh`(+ `lib/install-release.sh`)が導入する。devcontainer CLI は npm(mise の node)。
-  host に go/rust ツールチェーンは不要。
+  host の go/rust/Souther と Souther 用 JDK 25 は個人 host 開発用(プロジェクトの言語は devcontainer 側)。
 - **Docker は rootful + docker group**。docker group は実質 root 権限であることに留意。
 
 ## omarchy プロファイル
