@@ -225,6 +225,20 @@ zplug load
 # sops: age 秘密鍵の場所(復号用)
 export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
 
+# エージェント skill を 1 日 1 回、裏で最新にする(skills.toml の宣言どおり。setup.sh と同じ処理)。
+# stamp を先に更新するので、同時に開いた複数のシェルが二重に走らせることはない。
+# 失敗したら次に開いたシェルで 1 行だけ知らせる(詳細はログ)。
+() {
+  local dir="$HOME/.local/state/dotfiles" script="${${(%):-%x}:A:h:h:h}/lib/link-skills.py"
+  local stamp="$dir/link-skills.stamp" log="$dir/link-skills.log"
+  [[ -f $script ]] && (( $+commands[python3] )) || return
+  [[ -f $log ]] && grep -q '^link-skills: failed' "$log" && print -u2 "link-skills: 前回の skill 更新に失敗(${log/#$HOME/~})"
+  local -a fresh=( $stamp(N.mh-24) )  # 24 時間以内に更新された stamp があれば空でない
+  (( $#fresh )) && return
+  mkdir -p "$dir" && touch "$stamp"
+  python3 "$script" >"$log" 2>&1 &!
+}
+
 # マシンローカル設定(git 管理外)
 if [ -f $HOME/.zshrc.local ]; then
   source $HOME/.zshrc.local
