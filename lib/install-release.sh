@@ -28,18 +28,6 @@ ir_curl() {
   curl --fail --location --proto '=https' --tlsv1.2 --retry 3 --silent --show-error "$@"
 }
 
-# macOS 標準の shasum と Linux の sha256sum の双方に対応する。
-ir_verify_sha256() {
-  local file="$1" expected="$2" actual
-  if command -v sha256sum >/dev/null; then
-    actual=$(sha256sum <"$file") || return 1
-  else
-    actual=$(shasum -a 256 <"$file") || return 1
-  fi
-  actual=${actual%% *}
-  [[ "$actual" = "$expected" ]]
-}
-
 # URL を取得し sha256 を検証して OUT へ atomic に置く（OUT と同一 dir に一時展開=同一 filesystem）。
 ir_download_verified() {
   local url="$1" sha="$2" out="$3" dir tmp
@@ -49,7 +37,7 @@ ir_download_verified() {
   # shellcheck disable=SC2064
   trap "rm -f '${tmp}'" RETURN
   ir_curl -o "$tmp" "$url"
-  ir_verify_sha256 "$tmp" "$sha" || { echo "install-release: SHA-256 mismatch" >&2; return 1; }
+  printf '%s  %s\n' "$sha" "$tmp" | sha256sum -c - >/dev/null
   mv -f "$tmp" "$out"
 }
 

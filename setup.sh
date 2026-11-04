@@ -18,7 +18,7 @@ for step in install_packages languages editor; do
   "$ROOT_DIR/$MACHINE/$step.sh"
 done
 
-# 全マシン共通の CLI 本体を、版と SHA-256 を固定して導入
+# 全マシン共通の CLI を、固定したソースからビルドして導入
 legacy_status=0
 "$ROOT_DIR/shared/installers/legacy.sh" || legacy_status=$?
 
