@@ -1,0 +1,23 @@
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+
+# workspace 内は自動実行し、外側への操作は approval 対象にする。
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+
+# 通常の開発コマンドは sandbox 内で必要なネットワーク通信を許可する。
+[sandbox_workspace_write]
+network_access = true
+
+# プロジェクトごとの信頼設定はマシン固有のため、共有設定には含めない。
+
+[tui]
+screen_reader_detection_done = true
+
+[tui.model_availability_nux]
+gpt-6-astra = 4
+"gpt-6.1-sol" = 4
+
+[notice]
+hide_rate_limit_model_nudge = true
