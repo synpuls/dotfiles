@@ -98,6 +98,28 @@ legacy --version
 
 固定ソースの取得条件と現在の検証範囲は [Legacy CLI の導入](shared/legacy.md) を参照する。
 
+### ZMM（Rust / Souther）
+
+Mac の `brew bundle --global` は Rust、ffmpeg、Java（Souther のビルド用、25以上）、Maven を用意する。Java 17 / sbt は通常の ZMM 用依存から外した。すでに導入済みのパッケージや旧 Scala 配布物は削除しない。
+
+```sh
+ghq get https://github.com/synpuls/zmm
+# 初回だけ、ZMM の docs/rust-migration.md に従って
+# Rust 1.95.0 と Souther native compiler（固定コミット）を準備する。
+./shared/installers/zmm.sh
+zmm --version
+```
+
+既定の checkout は `~/workspace/github.com/synpuls/zmm`。別の配置や worktree は `--repo DIR`（または `ZMM_REPO`）で指定する。ビルド・配置・モデルのロード検証・旧コマンドの退避は ZMM の `scripts/install-local` に委譲し、dotfiles は実行用 wrapper を上書きしない。`setup.sh` ではリポジトリ取得やビルドを自動実行せず、上記コマンドで明示的に導入・更新する。checkout の更新は利用者が行う。
+
+検証済みバイナリから切り替える場合は次のように実行する。この場合 Java / Maven / Rust は不要で、既存の `target/` や `build/` も更新しない。
+
+```sh
+./shared/installers/zmm.sh --from /path/to/target/release
+```
+
+`~/.local/bin/zmm` は `~/.local/lib/zmm/releases/` の実行ファイルを参照する。旧コマンドは `~/.local/lib/zmm/backups/` に保持され、配置先は `ZMM_BIN_DIR` / `ZMM_INSTALL_ROOT` で変更できる。ignore 対象の MP3・キャッシュ・DB・旧 `target/universal/stage/` を削除する処理はない。
+
 server は `./init.sh` の後、**docker group と default shell(zsh)を反映するため一度 logout/login**
 してから `./setup.sh` を実行する。
 

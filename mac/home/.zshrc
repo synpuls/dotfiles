@@ -20,7 +20,7 @@ source $HOME/.zshrc.common.zsh
 
 export EDITOR=nvim
 
-# zmm local commands
+# User commands (ZMM: shared/installers/zmm.sh)
 export PATH="$HOME/.local/bin:$PATH"
 
 # work: 統合 dev VM(workstation)に herdr --remote で接続する（UI 専用の attach。旧 work の後継）。
