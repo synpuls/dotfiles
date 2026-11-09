@@ -11,6 +11,7 @@ mkdir -p "$BIN_DIR"
 BINS=(
   "dcx=${ROOT}/shared/bin/dcx"
   "legacy=${ROOT}/shared/bin/legacy"
+  "todo=${ROOT}/shared/bin/todo"
   "herdr-continue-claude=${ROOT}/shared/bin/herdr-continue-claude"
 )
 

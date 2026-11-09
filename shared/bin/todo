@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Remote-only client. No builds, token refreshes or local databases at agent startup.
+set -euo pipefail
+binary=${TODO_CLI_BINARY:-"$HOME/.local/opt/todo-manager/bin/todo"}
+[[ -f "$binary" && -x "$binary" ]] || {
+  echo 'todo: run dotfiles/shared/installers/todo.sh after checking out todo_manager.' >&2
+  exit 127
+}
+if [[ -z "${TODO_TOKEN:-}" ]]; then
+  token_file=${TODO_TOKEN_FILE:-"${XDG_CONFIG_HOME:-$HOME/.config}/todo-manager/token"}
+  [[ -f "$token_file" && ! -L "$token_file" && -O "$token_file" ]] || {
+    echo 'todo: an owner-only token file is required in ~/.config/todo-manager/token (or TODO_TOKEN_FILE).' >&2
+    exit 1
+  }
+  case "$(uname -s)" in
+    Darwin) mode=$(stat -f '%Lp' "$token_file") ;;
+    *) mode=$(stat -c '%a' "$token_file") ;;
+  esac
+  [[ "$mode" == 600 || "$mode" == 400 ]] || {
+    echo 'todo: token file must have mode 0600 or 0400.' >&2
+    exit 1
+  }
+  TODO_TOKEN=$(cat "$token_file")
+fi
+[[ ${#TODO_TOKEN} -ge 32 && "$TODO_TOKEN" != *$'\n'* && "$TODO_TOKEN" != *$'\r'* ]] || {
+  echo 'todo: invalid API token.' >&2; exit 1;
+}
+export TODO_TOKEN
+exec "$binary" --remote "${TODO_URL:-https://todo.home.synpuls.digital}" "$@"

@@ -22,8 +22,13 @@ command = "/bin/sh"
 args = ["-c", 'exec "$HOME/.local/bin/legacy" mcp']
 env = { LEGACY_API_URL = "https://legacy.home.synpuls.digital" }
 
+# No credentials in agent configuration; the wrapper reads a protected token file.
+[servers.todo]
+command = "/bin/sh"
+args = ["-c", 'exec "$HOME/.local/bin/todo" mcp']
+
 [all]
-servers = []
+servers = ["todo"]
 
 [codex]
 servers = ["chrome-devtools", "legacy"]

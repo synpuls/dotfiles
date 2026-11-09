@@ -189,3 +189,24 @@ Omarchy は「ドライバ等が整った Arch」として使い、見た目と�
   server は nvim 本体を **mise** で、設定を `server/editor.sh` が **commit 固定**で取得する(他マシンは `lib/nvim.sh`)。
 - フォントはコミットせず `ubuntu-desktop/fonts.sh` が Release から取得する
 - vscode の拡張一覧はマニフェスト。現状で固定し直すには `shared/vscode/install.sh --freeze`
+
+## Todo Manager CLI / MCP
+
+`todo` はkinjitoの共有DBへ接続するCLI。CodexとClaude Codeには `mcp.toml` の `[all]` から登録する。
+`setup.sh` はwrapperへのリンクとMCP登録を行う。privateソースの取得・ビルドは明示的に行う。
+
+```sh
+shared/installers/todo.sh --repo /path/to/todo_manager
+# 同じOS/architectureでビルド済みなら、ビルド不要
+shared/installers/todo.sh --repo /path/to/todo_manager --from /path/to/build/todo
+lib/link-bin.sh
+python3 lib/link-mcp.py
+```
+
+API tokenだけを `~/.config/todo-manager/token` にowner-only（0600）で配置する。
+秘密はbootstrap/1Passwordで配布し、公開dotfilesやMCP設定には入れない。
+接続先は既定 `https://todo.home.synpuls.digital`。変更は `TODO_URL`、tokenの別パスは `TODO_TOKEN_FILE`。
+MCP起動時にビルド・取得・Google/ChatGPTの認証は行わず、token未設定ならエラーにする。
+任意の作業directoryから `todo list` / `todo add TITLE` / `todo mcp` を利用できる。
+この導入はremote専用。サーバーの収集処理・SQLite・Souther native libraryはkinjito側にある。
+更新も同じinstallerを実行し、旧clientは `~/.local/opt/todo-manager/releases/` に保持する。
