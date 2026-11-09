@@ -199,6 +199,7 @@ Omarchy は「ドライバ等が整った Arch」として使い、見た目と�
 shared/installers/todo.sh --repo /path/to/todo_manager
 # 同じOS/architectureでビルド済みなら、ビルド不要
 shared/installers/todo.sh --repo /path/to/todo_manager --from /path/to/build/todo
+python3 shared/installers/todo-auth.py
 lib/link-bin.sh
 python3 lib/link-mcp.py
 ```
@@ -210,3 +211,8 @@ MCP起動時にビルド・取得・Google/ChatGPTの認証は行わず、token�
 任意の作業directoryから `todo list` / `todo add TITLE` / `todo mcp` を利用できる。
 この導入はremote専用。サーバーの収集処理・SQLite・Souther native libraryはkinjito側にある。
 更新も同じinstallerを実行し、旧clientは `~/.local/opt/todo-manager/releases/` に保持する。
+
+Todo用のtoken取得先は `op://Personal/todo-manager-client/credential`。
+`shared/installers/todo-auth.py` は明示実行時だけ1Passwordから読み、XDGのtokenファイルを0600で原子的に置き換える。
+`--reference` で別の保護項目を指定できる。取得失敗や不正な値の場合は既存tokenを維持する。
+Google/SIWCのrefresh tokenはクライアントへ配らず、kinjitoだけで更新する。
